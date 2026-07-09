@@ -1,0 +1,3770 @@
+/* global React, ReactDOM */
+const { useEffect, useMemo, useState } = React;
+
+/* ============================================================
+   META DRILL — VGC study tool
+   · Flashcards with in-session spaced repetition (Anki-style
+     Again / Hard / Good / Easy)
+   · Speed Duel: two mons side by side — pick the faster one
+   · Sprites from PokéAPI (falls back to type orbs offline)
+
+   Data: loads ./data.json (refreshed nightly by GitHub Action).
+   Falls back to the embedded snapshot when data.json isn't
+   reachable (e.g. running as a chat artifact).
+   ============================================================ */
+
+const FALLBACK = {
+ "generated": "2026-07-09",
+ "note": "Snapshot from Pikalytics. Refreshed nightly by GitHub Action once deployed. Percentages appear after the first automated pull.",
+ "formats": [
+  {
+   "id": "champions-regmb",
+   "game": "Pokémon Champions",
+   "label": "Reg M-B (current)",
+   "slug": "champions",
+   "hasNatures": true,
+   "hasWinrate": true,
+   "source": "Pikalytics ranked battle data · Champions Reg M-B S3",
+   "noteText": "Stats shown are base-form values — Megas change stats in battle. Champions nature data arrives with the first nightly pull.",
+   "mons": [
+    {
+     "rank": 1,
+     "name": "Garchomp",
+     "types": [
+      "dragon",
+      "ground"
+     ],
+     "winrate": 51.4,
+     "stats": {
+      "hp": 108,
+      "atk": 130,
+      "def": 95,
+      "spa": 80,
+      "spd": 85,
+      "spe": 102
+     },
+     "moves": [
+      "Dragon Claw",
+      "Rock Slide",
+      "Earthquake",
+      "Protect",
+      "Stomping Tantrum",
+      "Poison Jab"
+     ],
+     "items": [
+      "Life Orb",
+      "Sitrus Berry",
+      "Choice Scarf",
+      "Roseli Berry",
+      "Soft Sand"
+     ],
+     "abilities": [
+      "Rough Skin",
+      "Sand Veil"
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Sinistcha",
+     "types": [
+      "grass",
+      "ghost"
+     ],
+     "winrate": 50.0,
+     "stats": {
+      "hp": 71,
+      "atk": 60,
+      "def": 106,
+      "spa": 121,
+      "spd": 80,
+      "spe": 70
+     },
+     "moves": [
+      "Rage Powder",
+      "Matcha Gotcha",
+      "Life Dew",
+      "Trick Room",
+      "Protect",
+      "Strength Sap"
+     ],
+     "items": [
+      "Sitrus Berry",
+      "Kasib Berry",
+      "Colbur Berry",
+      "Leftovers",
+      "Coba Berry"
+     ],
+     "abilities": [
+      "Hospitality",
+      "Heatproof"
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Basculegion",
+     "types": [
+      "water",
+      "ghost"
+     ],
+     "winrate": 53.6,
+     "stats": {
+      "hp": 120,
+      "atk": 112,
+      "def": 65,
+      "spa": 80,
+      "spd": 75,
+      "spe": 78
+     },
+     "moves": [
+      "Last Respects",
+      "Aqua Jet",
+      "Wave Crash",
+      "Protect",
+      "Flip Turn",
+      "Liquidation"
+     ],
+     "items": [
+      "Choice Scarf",
+      "Mystic Water",
+      "Focus Sash",
+      "Life Orb",
+      "Sitrus Berry"
+     ],
+     "abilities": [
+      "Adaptability",
+      "Swift Swim",
+      "Mold Breaker"
+     ]
+    },
+    {
+     "rank": 4,
+     "name": "Whimsicott",
+     "types": [
+      "grass",
+      "fairy"
+     ],
+     "winrate": 51.8,
+     "stats": {
+      "hp": 60,
+      "atk": 67,
+      "def": 85,
+      "spa": 77,
+      "spd": 75,
+      "spe": 116
+     },
+     "moves": [
+      "Tailwind",
+      "Moonblast",
+      "Encore",
+      "Protect",
+      "Charm",
+      "Sunny Day"
+     ],
+     "items": [
+      "Focus Sash",
+      "Fairy Feather",
+      "Mental Herb",
+      "Coba Berry",
+      "Sitrus Berry"
+     ],
+     "abilities": [
+      "Prankster",
+      "Chlorophyll",
+      "Infiltrator"
+     ]
+    },
+    {
+     "rank": 5,
+     "name": "Kingambit",
+     "types": [
+      "dark",
+      "steel"
+     ],
+     "winrate": 55.3,
+     "stats": {
+      "hp": 100,
+      "atk": 135,
+      "def": 120,
+      "spa": 60,
+      "spd": 85,
+      "spe": 50
+     },
+     "moves": [
+      "Sucker Punch",
+      "Kowtow Cleave",
+      "Iron Head",
+      "Protect",
+      "Low Kick",
+      "Swords Dance"
+     ],
+     "items": [
+      "Chople Berry",
+      "Black Glasses",
+      "Focus Sash",
+      "Life Orb",
+      "Occa Berry"
+     ],
+     "abilities": [
+      "Defiant",
+      "Supreme Overlord"
+     ]
+    },
+    {
+     "rank": 6,
+     "name": "Staraptor",
+     "types": [
+      "normal",
+      "flying"
+     ],
+     "winrate": 44.7,
+     "stats": {
+      "hp": 85,
+      "atk": 120,
+      "def": 70,
+      "spa": 50,
+      "spd": 60,
+      "spe": 100
+     },
+     "moves": [
+      "Close Combat",
+      "Protect",
+      "Brave Bird",
+      "Roost",
+      "Dual Wingbeat",
+      "Tailwind"
+     ],
+     "items": [
+      "Staraptite",
+      "Choice Scarf",
+      "Life Orb",
+      "Sitrus Berry"
+     ],
+     "abilities": [
+      "Intimidate",
+      "Reckless"
+     ]
+    },
+    {
+     "rank": 7,
+     "name": "Incineroar",
+     "types": [
+      "fire",
+      "dark"
+     ],
+     "winrate": 51.8,
+     "stats": {
+      "hp": 95,
+      "atk": 115,
+      "def": 90,
+      "spa": 80,
+      "spd": 90,
+      "spe": 60
+     },
+     "moves": [
+      "Fake Out",
+      "Parting Shot",
+      "Flare Blitz",
+      "Throat Chop",
+      "Darkest Lariat",
+      "Protect"
+     ],
+     "items": [
+      "Sitrus Berry",
+      "Chople Berry",
+      "Passho Berry",
+      "Leftovers",
+      "Charcoal"
+     ],
+     "abilities": [
+      "Intimidate",
+      "Blaze"
+     ]
+    },
+    {
+     "rank": 8,
+     "name": "Charizard",
+     "types": [
+      "fire",
+      "flying"
+     ],
+     "winrate": 53.4,
+     "stats": {
+      "hp": 78,
+      "atk": 84,
+      "def": 78,
+      "spa": 109,
+      "spd": 85,
+      "spe": 100
+     },
+     "moves": [
+      "Protect",
+      "Heat Wave",
+      "Solar Beam",
+      "Weather Ball",
+      "Air Slash",
+      "Dragon Dance"
+     ],
+     "items": [
+      "Charizardite Y",
+      "Charizardite X",
+      "Focus Sash",
+      "Life Orb",
+      "Charcoal"
+     ],
+     "abilities": [
+      "Blaze",
+      "Solar Power"
+     ]
+    },
+    {
+     "rank": 9,
+     "name": "Raichu",
+     "types": [
+      "electric"
+     ],
+     "winrate": 44.4,
+     "stats": {
+      "hp": 60,
+      "atk": 90,
+      "def": 55,
+      "spa": 90,
+      "spd": 80,
+      "spe": 110
+     },
+     "moves": [
+      "Fake Out",
+      "Protect",
+      "Zap Cannon",
+      "Focus Blast",
+      "Volt Switch",
+      "Charm"
+     ],
+     "items": [
+      "Raichunite Y",
+      "Raichunite X",
+      "Focus Sash",
+      "Shuca Berry",
+      "Magnet"
+     ],
+     "abilities": [
+      "Lightning Rod",
+      "Static"
+     ]
+    },
+    {
+     "rank": 10,
+     "name": "Pelipper",
+     "types": [
+      "water",
+      "flying"
+     ],
+     "winrate": 50.0,
+     "stats": {
+      "hp": 60,
+      "atk": 50,
+      "def": 100,
+      "spa": 95,
+      "spd": 70,
+      "spe": 65
+     },
+     "moves": [
+      "Hurricane",
+      "Weather Ball",
+      "Tailwind",
+      "Wide Guard",
+      "Protect",
+      "Muddy Water"
+     ],
+     "items": [
+      "Focus Sash",
+      "Sitrus Berry",
+      "Damp Rock",
+      "Choice Scarf",
+      "Life Orb"
+     ],
+     "abilities": [
+      "Drizzle",
+      "Keen Eye"
+     ]
+    },
+    {
+     "rank": 11,
+     "name": "Sneasler",
+     "types": [
+      "fighting",
+      "poison"
+     ],
+     "winrate": 52.2,
+     "stats": {
+      "hp": 80,
+      "atk": 130,
+      "def": 60,
+      "spa": 40,
+      "spd": 80,
+      "spe": 120
+     },
+     "moves": [
+      "Close Combat",
+      "Fake Out",
+      "Dire Claw",
+      "Protect",
+      "Coaching",
+      "Rock Slide"
+     ],
+     "items": [
+      "White Herb",
+      "Focus Sash",
+      "Sitrus Berry",
+      "Lum Berry",
+      "Life Orb"
+     ],
+     "abilities": [
+      "Unburden",
+      "Poison Touch",
+      "Pressure"
+     ]
+    },
+    {
+     "rank": 12,
+     "name": "Archaludon",
+     "types": [
+      "steel",
+      "dragon"
+     ],
+     "winrate": 51.1,
+     "stats": {
+      "hp": 90,
+      "atk": 105,
+      "def": 130,
+      "spa": 125,
+      "spd": 65,
+      "spe": 85
+     },
+     "moves": [
+      "Electro Shot",
+      "Flash Cannon",
+      "Protect",
+      "Dragon Pulse",
+      "Draco Meteor",
+      "Aura Sphere"
+     ],
+     "items": [
+      "Leftovers",
+      "Choice Scarf",
+      "White Herb",
+      "Chople Berry",
+      "Sitrus Berry"
+     ],
+     "abilities": [
+      "Stamina",
+      "Sturdy",
+      "Stalwart"
+     ]
+    },
+    {
+     "rank": 13,
+     "name": "Grimmsnarl",
+     "types": [
+      "dark",
+      "fairy"
+     ],
+     "winrate": 47.5,
+     "stats": {
+      "hp": 95,
+      "atk": 120,
+      "def": 65,
+      "spa": 95,
+      "spd": 75,
+      "spe": 60
+     },
+     "moves": [
+      "Light Screen",
+      "Parting Shot",
+      "Reflect",
+      "Spirit Break",
+      "Fake Out",
+      "Scary Face"
+     ],
+     "items": [
+      "Light Clay",
+      "Roseli Berry",
+      "Sitrus Berry",
+      "Leftovers",
+      "Focus Sash"
+     ],
+     "abilities": [
+      "Prankster",
+      "Frisk",
+      "Pickpocket"
+     ]
+    },
+    {
+     "rank": 14,
+     "name": "Sylveon",
+     "types": [
+      "fairy"
+     ],
+     "winrate": 50.7,
+     "stats": {
+      "hp": 95,
+      "atk": 65,
+      "def": 65,
+      "spa": 110,
+      "spd": 130,
+      "spe": 60
+     },
+     "moves": [
+      "Hyper Voice",
+      "Quick Attack",
+      "Hyper Beam",
+      "Detect",
+      "Protect",
+      "Moonblast"
+     ],
+     "items": [
+      "Fairy Feather",
+      "Life Orb",
+      "Sitrus Berry",
+      "Leftovers",
+      "Choice Scarf"
+     ],
+     "abilities": [
+      "Pixilate",
+      "Cute Charm"
+     ]
+    },
+    {
+     "rank": 15,
+     "name": "Swampert",
+     "types": [
+      "water",
+      "ground"
+     ],
+     "winrate": 50.6,
+     "stats": {
+      "hp": 100,
+      "atk": 110,
+      "def": 90,
+      "spa": 85,
+      "spd": 90,
+      "spe": 60
+     },
+     "moves": [
+      "Protect",
+      "Wave Crash",
+      "Earthquake",
+      "Ice Punch",
+      "High Horsepower",
+      "Rock Slide"
+     ],
+     "items": [
+      "Swampertite",
+      "Life Orb",
+      "Rindo Berry",
+      "Sitrus Berry",
+      "Leftovers"
+     ],
+     "abilities": [
+      "Torrent",
+      "Damp"
+     ]
+    },
+    {
+     "rank": 16,
+     "name": "Metagross",
+     "types": [
+      "steel",
+      "psychic"
+     ],
+     "winrate": 48.5,
+     "stats": {
+      "hp": 80,
+      "atk": 135,
+      "def": 130,
+      "spa": 95,
+      "spd": 90,
+      "spe": 70
+     },
+     "moves": [
+      "Protect",
+      "Psychic Fangs",
+      "Iron Head",
+      "Bullet Punch",
+      "Stomping Tantrum",
+      "Meteor Mash"
+     ],
+     "items": [
+      "Metagrossite",
+      "Life Orb",
+      "Metal Coat",
+      "Leftovers",
+      "Sitrus Berry"
+     ],
+     "abilities": [
+      "Clear Body",
+      "Light Metal"
+     ]
+    },
+    {
+     "rank": 17,
+     "name": "Farigiraf",
+     "types": [
+      "normal",
+      "psychic"
+     ],
+     "winrate": 50.2,
+     "stats": {
+      "hp": 120,
+      "atk": 90,
+      "def": 70,
+      "spa": 110,
+      "spd": 70,
+      "spe": 60
+     },
+     "moves": [
+      "Trick Room",
+      "Psychic",
+      "Helping Hand",
+      "Protect",
+      "Thunderbolt",
+      "Hyper Voice"
+     ],
+     "items": [
+      "Sitrus Berry",
+      "Colbur Berry",
+      "Mental Herb",
+      "Focus Sash",
+      "Leftovers"
+     ],
+     "abilities": [
+      "Armor Tail",
+      "Cud Chew",
+      "Sap Sipper"
+     ]
+    },
+    {
+     "rank": 18,
+     "name": "Floette-Eternal",
+     "types": [
+      "fairy"
+     ],
+     "winrate": 55.7,
+     "stats": {
+      "hp": 74,
+      "atk": 65,
+      "def": 67,
+      "spa": 125,
+      "spd": 128,
+      "spe": 92
+     },
+     "moves": [
+      "Protect",
+      "Dazzling Gleam",
+      "Moonblast",
+      "Light of Ruin",
+      "Calm Mind",
+      "Draining Kiss"
+     ],
+     "items": [
+      "Floettite",
+      "Life Orb",
+      "Fairy Feather",
+      "Choice Scarf"
+     ],
+     "abilities": [
+      "Flower Veil",
+      "Symbiosis"
+     ]
+    },
+    {
+     "rank": 19,
+     "name": "Gholdengo",
+     "types": [
+      "steel",
+      "ghost"
+     ],
+     "winrate": 48.4,
+     "stats": {
+      "hp": 87,
+      "atk": 60,
+      "def": 95,
+      "spa": 133,
+      "spd": 91,
+      "spe": 84
+     },
+     "moves": [
+      "Make It Rain",
+      "Shadow Ball",
+      "Protect",
+      "Nasty Plot",
+      "Power Gem",
+      "Trick"
+     ],
+     "items": [
+      "Life Orb",
+      "Choice Scarf",
+      "Metal Coat",
+      "Leftovers",
+      "White Herb"
+     ],
+     "abilities": [
+      "Good as Gold"
+     ]
+    },
+    {
+     "rank": 20,
+     "name": "Aerodactyl",
+     "types": [
+      "rock",
+      "flying"
+     ],
+     "winrate": 50.0,
+     "stats": {
+      "hp": 80,
+      "atk": 105,
+      "def": 65,
+      "spa": 60,
+      "spd": 75,
+      "spe": 130
+     },
+     "moves": [
+      "Rock Slide",
+      "Tailwind",
+      "Dual Wingbeat",
+      "Protect",
+      "Wide Guard",
+      "Ice Fang"
+     ],
+     "items": [
+      "Aerodactylite",
+      "Focus Sash",
+      "Passho Berry",
+      "Life Orb",
+      "Wide Lens"
+     ],
+     "abilities": [
+      "Unnerve",
+      "Pressure",
+      "Rock Head"
+     ]
+    },
+    {
+     "rank": 21,
+     "name": "Maushold",
+     "types": [
+      "normal"
+     ],
+     "winrate": 50.1,
+     "stats": {
+      "hp": 74,
+      "atk": 75,
+      "def": 70,
+      "spa": 65,
+      "spd": 75,
+      "spe": 111
+     },
+     "moves": [
+      "Follow Me",
+      "Protect",
+      "Super Fang",
+      "Population Bomb",
+      "Beat Up",
+      "Encore"
+     ],
+     "items": [
+      "Chople Berry",
+      "Wide Lens",
+      "Focus Sash",
+      "Sitrus Berry",
+      "Mental Herb"
+     ],
+     "abilities": [
+      "Friend Guard",
+      "Technician",
+      "Cheek Pouch"
+     ]
+    },
+    {
+     "rank": 22,
+     "name": "Annihilape",
+     "types": [
+      "fighting",
+      "ghost"
+     ],
+     "winrate": 43.9,
+     "stats": {
+      "hp": 110,
+      "atk": 115,
+      "def": 80,
+      "spa": 50,
+      "spd": 90,
+      "spe": 90
+     },
+     "moves": [
+      "Rage Fist",
+      "Protect",
+      "Drain Punch",
+      "Bulk Up",
+      "Close Combat",
+      "Coaching"
+     ],
+     "items": [
+      "Leftovers",
+      "Sitrus Berry",
+      "Choice Scarf",
+      "Focus Sash",
+      "Roseli Berry"
+     ],
+     "abilities": [
+      "Defiant",
+      "Inner Focus",
+      "Vital Spirit"
+     ]
+    },
+    {
+     "rank": 23,
+     "name": "Sableye",
+     "types": [
+      "dark",
+      "ghost"
+     ],
+     "winrate": 45.7,
+     "stats": {
+      "hp": 50,
+      "atk": 75,
+      "def": 75,
+      "spa": 65,
+      "spd": 65,
+      "spe": 50
+     },
+     "moves": [
+      "Rain Dance",
+      "Light Screen",
+      "Encore",
+      "Reflect",
+      "Will-O-Wisp",
+      "Disable"
+     ],
+     "items": [
+      "Roseli Berry",
+      "Light Clay",
+      "Sitrus Berry",
+      "Focus Sash",
+      "Leftovers"
+     ],
+     "abilities": [
+      "Prankster",
+      "Stall"
+     ]
+    },
+    {
+     "rank": 24,
+     "name": "Mawile",
+     "types": [
+      "steel",
+      "fairy"
+     ],
+     "winrate": 47.8,
+     "stats": {
+      "hp": 50,
+      "atk": 85,
+      "def": 85,
+      "spa": 55,
+      "spd": 55,
+      "spe": 50
+     },
+     "moves": [
+      "Play Rough",
+      "Sucker Punch",
+      "Protect",
+      "Iron Head",
+      "Swords Dance",
+      "Rock Slide"
+     ],
+     "items": [
+      "Mawilite"
+     ],
+     "abilities": [
+      "Intimidate",
+      "Hyper Cutter",
+      "Sheer Force"
+     ]
+    },
+    {
+     "rank": 25,
+     "name": "Ninetales-Alola",
+     "types": [
+      "ice",
+      "fairy"
+     ],
+     "winrate": 49.5,
+     "stats": {
+      "hp": 73,
+      "atk": 67,
+      "def": 75,
+      "spa": 81,
+      "spd": 100,
+      "spe": 109
+     },
+     "moves": [
+      "Blizzard",
+      "Protect",
+      "Freeze-Dry",
+      "Aurora Veil",
+      "Moonblast",
+      "Encore"
+     ],
+     "items": [
+      "Light Clay",
+      "Focus Sash",
+      "Choice Scarf",
+      "Never-Melt Ice",
+      "Life Orb"
+     ],
+     "abilities": [
+      "Snow Warning",
+      "Snow Cloak"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sv-regi",
+   "game": "Scarlet & Violet",
+   "label": "Reg I (current)",
+   "slug": "homebsd",
+   "hasNatures": true,
+   "hasWinrate": false,
+   "source": "Pikalytics ranked ladder · VGC 2026 Regulation Set I",
+   "noteText": null,
+   "mons": [
+    {
+     "rank": 1,
+     "name": "Incineroar",
+     "types": [
+      "fire",
+      "dark"
+     ],
+     "stats": {
+      "hp": 95,
+      "atk": 115,
+      "def": 90,
+      "spa": 80,
+      "spd": 90,
+      "spe": 60
+     },
+     "moves": [
+      "Fake Out",
+      "Knock Off",
+      "Flare Blitz",
+      "Parting Shot",
+      "U-turn",
+      "Will-O-Wisp"
+     ],
+     "items": [
+      "Assault Vest",
+      "Rocky Helmet",
+      "Safety Goggles",
+      "Sitrus Berry",
+      "Chople Berry"
+     ],
+     "natures": [
+      "Impish",
+      "Careful",
+      "Adamant",
+      "Relaxed"
+     ],
+     "abilities": [
+      "Intimidate"
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Calyrex-Shadow",
+     "types": [
+      "psychic",
+      "ghost"
+     ],
+     "stats": {
+      "hp": 100,
+      "atk": 85,
+      "def": 80,
+      "spa": 165,
+      "spd": 100,
+      "spe": 150
+     },
+     "moves": [
+      "Astral Barrage",
+      "Protect",
+      "Psychic",
+      "Encore",
+      "Nasty Plot",
+      "Pollen Puff"
+     ],
+     "items": [
+      "Focus Sash",
+      "Life Orb",
+      "Choice Specs",
+      "Choice Scarf",
+      "Covert Cloak"
+     ],
+     "natures": [
+      "Timid",
+      "Modest",
+      "Quiet"
+     ],
+     "abilities": [
+      "As One"
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Miraidon",
+     "types": [
+      "electric",
+      "dragon"
+     ],
+     "stats": {
+      "hp": 100,
+      "atk": 85,
+      "def": 100,
+      "spa": 135,
+      "spd": 115,
+      "spe": 135
+     },
+     "moves": [
+      "Electro Drift",
+      "Volt Switch",
+      "Draco Meteor",
+      "Dazzling Gleam",
+      "Snarl",
+      "Protect"
+     ],
+     "items": [
+      "Choice Specs",
+      "Choice Scarf",
+      "Life Orb",
+      "Assault Vest",
+      "Covert Cloak"
+     ],
+     "natures": [
+      "Modest",
+      "Timid"
+     ],
+     "abilities": [
+      "Hadron Engine"
+     ]
+    },
+    {
+     "rank": 4,
+     "name": "Rillaboom",
+     "types": [
+      "grass"
+     ],
+     "stats": {
+      "hp": 100,
+      "atk": 125,
+      "def": 90,
+      "spa": 60,
+      "spd": 70,
+      "spe": 85
+     },
+     "moves": [
+      "Fake Out",
+      "Grassy Glide",
+      "Wood Hammer",
+      "U-turn",
+      "High Horsepower",
+      "Knock Off"
+     ],
+     "items": [
+      "Assault Vest",
+      "Miracle Seed",
+      "Life Orb",
+      "Meadow Plate",
+      "Clear Amulet"
+     ],
+     "natures": [
+      "Adamant",
+      "Jolly",
+      "Impish",
+      "Careful"
+     ],
+     "abilities": [
+      "Grassy Surge",
+      "Overgrow"
+     ]
+    },
+    {
+     "rank": 5,
+     "name": "Urshifu-Rapid-Strike",
+     "types": [
+      "fighting",
+      "water"
+     ],
+     "stats": {
+      "hp": 100,
+      "atk": 130,
+      "def": 100,
+      "spa": 63,
+      "spd": 60,
+      "spe": 97
+     },
+     "moves": [
+      "Surging Strikes",
+      "Close Combat",
+      "Aqua Jet",
+      "U-turn",
+      "Detect",
+      "Taunt"
+     ],
+     "items": [
+      "Choice Scarf",
+      "Choice Band",
+      "Focus Sash",
+      "Mystic Water",
+      "Covert Cloak"
+     ],
+     "natures": [
+      "Adamant",
+      "Jolly",
+      "Brave"
+     ],
+     "abilities": [
+      "Unseen Fist"
+     ]
+    },
+    {
+     "rank": 6,
+     "name": "Calyrex-Ice",
+     "types": [
+      "psychic",
+      "ice"
+     ],
+     "stats": {
+      "hp": 100,
+      "atk": 165,
+      "def": 150,
+      "spa": 85,
+      "spd": 130,
+      "spe": 50
+     },
+     "moves": [
+      "Glacial Lance",
+      "Trick Room",
+      "Protect",
+      "High Horsepower",
+      "Leech Seed",
+      "Seed Bomb"
+     ],
+     "items": [
+      "Clear Amulet",
+      "Leftovers",
+      "Assault Vest",
+      "Never-Melt Ice",
+      "Loaded Dice"
+     ],
+     "natures": [
+      "Adamant",
+      "Brave",
+      "Jolly",
+      "Impish"
+     ],
+     "abilities": [
+      "As One"
+     ]
+    },
+    {
+     "rank": 7,
+     "name": "Zamazenta",
+     "types": [
+      "fighting"
+     ],
+     "stats": {
+      "hp": 92,
+      "atk": 120,
+      "def": 115,
+      "spa": 80,
+      "spd": 115,
+      "spe": 138
+     },
+     "moves": [
+      "Body Press",
+      "Wide Guard",
+      "Protect",
+      "Heavy Slam",
+      "Iron Head",
+      "Iron Defense"
+     ],
+     "items": [
+      "Rusted Shield",
+      "Electric Seed"
+     ],
+     "natures": [
+      "Impish",
+      "Jolly",
+      "Careful",
+      "Adamant"
+     ],
+     "abilities": [
+      "Dauntless Shield"
+     ]
+    },
+    {
+     "rank": 8,
+     "name": "Whimsicott",
+     "types": [
+      "grass",
+      "fairy"
+     ],
+     "stats": {
+      "hp": 60,
+      "atk": 67,
+      "def": 85,
+      "spa": 77,
+      "spd": 75,
+      "spe": 116
+     },
+     "moves": [
+      "Tailwind",
+      "Moonblast",
+      "Encore",
+      "Light Screen",
+      "Taunt",
+      "Helping Hand"
+     ],
+     "items": [
+      "Focus Sash",
+      "Covert Cloak",
+      "Mental Herb",
+      "Rocky Helmet",
+      "Ring Target"
+     ],
+     "natures": [
+      "Timid",
+      "Calm",
+      "Bold"
+     ],
+     "abilities": [
+      "Prankster"
+     ]
+    },
+    {
+     "rank": 9,
+     "name": "Chien-Pao",
+     "types": [
+      "dark",
+      "ice"
+     ],
+     "stats": {
+      "hp": 80,
+      "atk": 120,
+      "def": 80,
+      "spa": 90,
+      "spd": 65,
+      "spe": 135
+     },
+     "moves": [
+      "Sucker Punch",
+      "Ice Spinner",
+      "Protect",
+      "Ruination",
+      "Ice Shard",
+      "Icicle Crash"
+     ],
+     "items": [
+      "Focus Sash",
+      "Covert Cloak",
+      "Assault Vest",
+      "Life Orb",
+      "Choice Scarf"
+     ],
+     "natures": [
+      "Jolly",
+      "Adamant"
+     ],
+     "abilities": [
+      "Sword of Ruin"
+     ]
+    },
+    {
+     "rank": 10,
+     "name": "Tornadus",
+     "types": [
+      "flying"
+     ],
+     "stats": {
+      "hp": 79,
+      "atk": 115,
+      "def": 70,
+      "spa": 125,
+      "spd": 80,
+      "spe": 111
+     },
+     "moves": [
+      "Tailwind",
+      "Bleakwind Storm",
+      "Taunt",
+      "Rain Dance",
+      "Protect",
+      "Sunny Day"
+     ],
+     "items": [
+      "Covert Cloak",
+      "Sharp Beak",
+      "Focus Sash",
+      "Mental Herb",
+      "Rocky Helmet"
+     ],
+     "natures": [
+      "Modest",
+      "Timid",
+      "Bold"
+     ],
+     "abilities": [
+      "Prankster",
+      "Defiant"
+     ]
+    },
+    {
+     "rank": 11,
+     "name": "Koraidon",
+     "types": [
+      "fighting",
+      "dragon"
+     ],
+     "stats": {
+      "hp": 100,
+      "atk": 135,
+      "def": 115,
+      "spa": 85,
+      "spd": 100,
+      "spe": 135
+     },
+     "moves": [
+      "Flare Blitz",
+      "Protect",
+      "Collision Course",
+      "Flame Charge",
+      "U-turn",
+      "Breaking Swipe"
+     ],
+     "items": [
+      "Clear Amulet",
+      "Choice Scarf",
+      "Life Orb",
+      "Loaded Dice",
+      "Assault Vest"
+     ],
+     "natures": [
+      "Adamant",
+      "Jolly"
+     ],
+     "abilities": [
+      "Orichalcum Pulse"
+     ]
+    },
+    {
+     "rank": 12,
+     "name": "Kyogre",
+     "types": [
+      "water"
+     ],
+     "stats": {
+      "hp": 100,
+      "atk": 100,
+      "def": 90,
+      "spa": 150,
+      "spd": 140,
+      "spe": 90
+     },
+     "moves": [
+      "Water Spout",
+      "Origin Pulse",
+      "Thunder",
+      "Ice Beam",
+      "Hydro Pump",
+      "Protect"
+     ],
+     "items": [
+      "Assault Vest",
+      "Mystic Water",
+      "Choice Scarf",
+      "Choice Specs",
+      "Covert Cloak"
+     ],
+     "natures": [
+      "Modest",
+      "Timid",
+      "Quiet"
+     ],
+     "abilities": [
+      "Drizzle"
+     ]
+    },
+    {
+     "rank": 13,
+     "name": "Raging Bolt",
+     "types": [
+      "electric",
+      "dragon"
+     ],
+     "stats": {
+      "hp": 125,
+      "atk": 73,
+      "def": 91,
+      "spa": 137,
+      "spd": 89,
+      "spe": 75
+     },
+     "moves": [
+      "Thunderclap",
+      "Thunderbolt",
+      "Protect",
+      "Dragon Pulse",
+      "Draco Meteor",
+      "Volt Switch"
+     ],
+     "items": [
+      "Booster Energy",
+      "Assault Vest",
+      "Life Orb",
+      "Magnet",
+      "Choice Specs"
+     ],
+     "natures": [
+      "Modest",
+      "Quiet"
+     ],
+     "abilities": [
+      "Protosynthesis"
+     ]
+    },
+    {
+     "rank": 14,
+     "name": "Flutter Mane",
+     "types": [
+      "ghost",
+      "fairy"
+     ],
+     "stats": {
+      "hp": 55,
+      "atk": 55,
+      "def": 55,
+      "spa": 135,
+      "spd": 135,
+      "spe": 135
+     },
+     "moves": [
+      "Moonblast",
+      "Icy Wind",
+      "Shadow Ball",
+      "Protect",
+      "Taunt",
+      "Dazzling Gleam"
+     ],
+     "items": [
+      "Focus Sash",
+      "Booster Energy",
+      "Choice Specs",
+      "Fairy Feather",
+      "Life Orb"
+     ],
+     "natures": [
+      "Timid",
+      "Modest",
+      "Bold"
+     ],
+     "abilities": [
+      "Protosynthesis"
+     ]
+    },
+    {
+     "rank": 15,
+     "name": "Lunala",
+     "types": [
+      "psychic",
+      "ghost"
+     ],
+     "stats": {
+      "hp": 137,
+      "atk": 113,
+      "def": 89,
+      "spa": 137,
+      "spd": 107,
+      "spe": 97
+     },
+     "moves": [
+      "Moongeist Beam",
+      "Wide Guard",
+      "Trick Room",
+      "Meteor Beam",
+      "Moonblast",
+      "Expanding Force"
+     ],
+     "items": [
+      "Power Herb",
+      "Electric Seed",
+      "Leftovers",
+      "Mental Herb",
+      "Expert Belt"
+     ],
+     "natures": [
+      "Modest",
+      "Quiet",
+      "Timid"
+     ],
+     "abilities": [
+      "Shadow Shield"
+     ]
+    },
+    {
+     "rank": 16,
+     "name": "Ogerpon",
+     "types": [
+      "grass"
+     ],
+     "stats": {
+      "hp": 80,
+      "atk": 120,
+      "def": 84,
+      "spa": 60,
+      "spd": 96,
+      "spe": 110
+     },
+     "moves": [
+      "Ivy Cudgel",
+      "Spiky Shield",
+      "Follow Me",
+      "Horn Leech",
+      "Wood Hammer",
+      "Grassy Glide"
+     ],
+     "items": [
+      "Cornerstone Mask",
+      "Wellspring Mask",
+      "Hearthflame Mask",
+      "Focus Sash",
+      "Leftovers"
+     ],
+     "natures": [
+      "Adamant",
+      "Jolly",
+      "Impish"
+     ],
+     "abilities": [
+      "Sturdy (Cornerstone)",
+      "Water Absorb (Wellspring)",
+      "Mold Breaker (Hearthflame)"
+     ]
+    },
+    {
+     "rank": 17,
+     "name": "Indeedee-F",
+     "types": [
+      "psychic",
+      "normal"
+     ],
+     "stats": {
+      "hp": 70,
+      "atk": 55,
+      "def": 65,
+      "spa": 95,
+      "spd": 105,
+      "spe": 85
+     },
+     "moves": [
+      "Follow Me",
+      "Helping Hand",
+      "Trick Room",
+      "Psychic",
+      "Dazzling Gleam",
+      "Imprison"
+     ],
+     "items": [
+      "Psychic Seed",
+      "Rocky Helmet",
+      "Eject Button",
+      "Safety Goggles",
+      "Focus Sash"
+     ],
+     "natures": [
+      "Bold",
+      "Relaxed",
+      "Sassy",
+      "Calm"
+     ],
+     "abilities": [
+      "Psychic Surge",
+      "Own Tempo"
+     ]
+    },
+    {
+     "rank": 18,
+     "name": "Grimmsnarl",
+     "types": [
+      "dark",
+      "fairy"
+     ],
+     "stats": {
+      "hp": 95,
+      "atk": 120,
+      "def": 65,
+      "spa": 95,
+      "spd": 75,
+      "spe": 60
+     },
+     "moves": [
+      "Light Screen",
+      "Reflect",
+      "Spirit Break",
+      "Thunder Wave",
+      "Fake Out",
+      "Foul Play"
+     ],
+     "items": [
+      "Light Clay",
+      "Covert Cloak",
+      "Lagging Tail",
+      "Rocky Helmet",
+      "Wide Lens"
+     ],
+     "natures": [
+      "Careful",
+      "Impish",
+      "Adamant",
+      "Calm"
+     ],
+     "abilities": [
+      "Prankster"
+     ]
+    },
+    {
+     "rank": 19,
+     "name": "Amoonguss",
+     "types": [
+      "grass",
+      "poison"
+     ],
+     "stats": {
+      "hp": 114,
+      "atk": 85,
+      "def": 70,
+      "spa": 85,
+      "spd": 80,
+      "spe": 30
+     },
+     "moves": [
+      "Rage Powder",
+      "Spore",
+      "Protect",
+      "Pollen Puff",
+      "Sludge Bomb",
+      "Clear Smog"
+     ],
+     "items": [
+      "Rocky Helmet",
+      "Mental Herb",
+      "Sitrus Berry",
+      "Covert Cloak",
+      "Leftovers"
+     ],
+     "natures": [
+      "Relaxed",
+      "Bold",
+      "Sassy",
+      "Calm"
+     ],
+     "abilities": [
+      "Regenerator",
+      "Effect Spore"
+     ]
+    },
+    {
+     "rank": 20,
+     "name": "Landorus",
+     "types": [
+      "ground",
+      "flying"
+     ],
+     "stats": {
+      "hp": 89,
+      "atk": 125,
+      "def": 90,
+      "spa": 115,
+      "spd": 80,
+      "spe": 101
+     },
+     "moves": [
+      "Earth Power",
+      "Sludge Bomb",
+      "Sandsear Storm",
+      "Protect",
+      "Taunt",
+      "U-turn"
+     ],
+     "items": [
+      "Life Orb",
+      "Choice Scarf",
+      "Assault Vest",
+      "Focus Sash",
+      "Choice Specs"
+     ],
+     "natures": [
+      "Modest",
+      "Timid"
+     ],
+     "abilities": [
+      "Sheer Force",
+      "Sand Force"
+     ]
+    },
+    {
+     "rank": 21,
+     "name": "Smeargle",
+     "types": [
+      "normal"
+     ],
+     "stats": {
+      "hp": 55,
+      "atk": 20,
+      "def": 35,
+      "spa": 20,
+      "spd": 45,
+      "spe": 75
+     },
+     "moves": [
+      "Follow Me",
+      "Spore",
+      "Fake Out",
+      "Decorate",
+      "Wide Guard",
+      "Spiky Shield"
+     ],
+     "items": [
+      "Focus Sash",
+      "Eject Pack",
+      "Mental Herb",
+      "Choice Scarf",
+      "Rocky Helmet"
+     ],
+     "natures": [
+      "Jolly",
+      "Timid",
+      "Relaxed"
+     ],
+     "abilities": [
+      "Moody",
+      "Technician",
+      "Own Tempo"
+     ]
+    },
+    {
+     "rank": 22,
+     "name": "Volcarona",
+     "types": [
+      "bug",
+      "fire"
+     ],
+     "stats": {
+      "hp": 85,
+      "atk": 60,
+      "def": 65,
+      "spa": 135,
+      "spd": 105,
+      "spe": 100
+     },
+     "moves": [
+      "Protect",
+      "Rage Powder",
+      "Fiery Dance",
+      "Quiver Dance",
+      "Struggle Bug",
+      "Tailwind"
+     ],
+     "items": [
+      "Electric Seed",
+      "Rocky Helmet",
+      "Leftovers",
+      "Safety Goggles",
+      "Charcoal"
+     ],
+     "natures": [
+      "Bold",
+      "Timid",
+      "Modest",
+      "Calm"
+     ],
+     "abilities": [
+      "Flame Body",
+      "Swarm"
+     ]
+    },
+    {
+     "rank": 23,
+     "name": "Chi-Yu",
+     "types": [
+      "dark",
+      "fire"
+     ],
+     "stats": {
+      "hp": 55,
+      "atk": 80,
+      "def": 80,
+      "spa": 135,
+      "spd": 120,
+      "spe": 100
+     },
+     "moves": [
+      "Heat Wave",
+      "Dark Pulse",
+      "Overheat",
+      "Snarl",
+      "Flamethrower",
+      "Protect"
+     ],
+     "items": [
+      "Choice Scarf",
+      "Choice Specs",
+      "Focus Sash",
+      "Assault Vest",
+      "Covert Cloak"
+     ],
+     "natures": [
+      "Modest",
+      "Timid",
+      "Quiet"
+     ],
+     "abilities": [
+      "Beads of Ruin"
+     ]
+    },
+    {
+     "rank": 24,
+     "name": "Ursaluna",
+     "types": [
+      "ground",
+      "normal"
+     ],
+     "stats": {
+      "hp": 130,
+      "atk": 140,
+      "def": 105,
+      "spa": 45,
+      "spd": 80,
+      "spe": 50
+     },
+     "moves": [
+      "Facade",
+      "Protect",
+      "Headlong Rush",
+      "Earthquake",
+      "Low Kick",
+      "Crunch"
+     ],
+     "items": [
+      "Flame Orb"
+     ],
+     "natures": [
+      "Brave",
+      "Adamant",
+      "Jolly"
+     ],
+     "abilities": [
+      "Guts"
+     ]
+    },
+    {
+     "rank": 25,
+     "name": "Farigiraf",
+     "types": [
+      "normal",
+      "psychic"
+     ],
+     "stats": {
+      "hp": 120,
+      "atk": 90,
+      "def": 70,
+      "spa": 110,
+      "spd": 70,
+      "spe": 60
+     },
+     "moves": [
+      "Trick Room",
+      "Foul Play",
+      "Helping Hand",
+      "Psychic",
+      "Psychic Noise",
+      "Protect"
+     ],
+     "items": [
+      "Electric Seed",
+      "Safety Goggles",
+      "Sitrus Berry",
+      "Mental Herb",
+      "Rocky Helmet"
+     ],
+     "natures": [
+      "Bold",
+      "Relaxed",
+      "Modest",
+      "Impish"
+     ],
+     "abilities": [
+      "Armor Tail",
+      "Sap Sipper"
+     ]
+    }
+   ]
+  }
+ ]
+};
+
+/* ------------------- spaced repetition tuning ------------------- */
+const SRS = {
+  GRADUATE_STEPS: 2,
+  GAPS: { again: 2, hard: 5, good: 10 }, // measured in cards
+  JITTER: 2,
+};
+
+const DUEL_TARGETS = [5, 10, 15, 25];
+
+const TYPE_COLORS = {
+  normal: "#A8A77A", fire: "#EE8130", water: "#6390F0", electric: "#F7D02C",
+  grass: "#7AC74C", ice: "#96D9D6", fighting: "#C22E28", poison: "#A33EA1",
+  ground: "#E2BF65", flying: "#A98FF3", psychic: "#F95587", bug: "#A6B91A",
+  rock: "#B6A136", ghost: "#735797", dragon: "#6F35FC", dark: "#705746",
+  steel: "#B7B7CE", fairy: "#D685AD", unknown: "#8A8DA8",
+};
+
+const STAT_META = [
+  { key: "hp", label: "HP" }, { key: "atk", label: "Atk" }, { key: "def", label: "Def" },
+  { key: "spa", label: "SpA" }, { key: "spd", label: "SpD" }, { key: "spe", label: "Spe" },
+];
+const STAT_LABEL = Object.fromEntries(STAT_META.map(s => [s.key, s.label]));
+
+const CATEGORIES = [
+  { key: "stats", label: "Base stats", hint: "drill one stat" },
+  { key: "moves", label: "Moves game", hint: "pick every move over 30% usage" },
+  { key: "natures", label: "Common natures", hint: "what people actually run" },
+  { key: "natureChart", label: "Nature chart", hint: "all 25 natures, +10%/−10%" },
+  { key: "items", label: "Common items", hint: "top held items" },
+  { key: "abilities", label: "Common abilities", hint: "usually one right answer" },
+];
+
+/* The full nature chart. plus/minus are stat keys; null = neutral. */
+const NATURE_CHART = [
+  { name: "Adamant", plus: "atk", minus: "spa" },
+  { name: "Lonely", plus: "atk", minus: "def" },
+  { name: "Brave", plus: "atk", minus: "spe" },
+  { name: "Naughty", plus: "atk", minus: "spd" },
+  { name: "Bold", plus: "def", minus: "atk" },
+  { name: "Impish", plus: "def", minus: "spa" },
+  { name: "Relaxed", plus: "def", minus: "spe" },
+  { name: "Lax", plus: "def", minus: "spd" },
+  { name: "Modest", plus: "spa", minus: "atk" },
+  { name: "Mild", plus: "spa", minus: "def" },
+  { name: "Quiet", plus: "spa", minus: "spe" },
+  { name: "Rash", plus: "spa", minus: "spd" },
+  { name: "Calm", plus: "spd", minus: "atk" },
+  { name: "Gentle", plus: "spd", minus: "def" },
+  { name: "Sassy", plus: "spd", minus: "spe" },
+  { name: "Careful", plus: "spd", minus: "spa" },
+  { name: "Timid", plus: "spe", minus: "atk" },
+  { name: "Hasty", plus: "spe", minus: "def" },
+  { name: "Jolly", plus: "spe", minus: "spa" },
+  { name: "Naive", plus: "spe", minus: "spd" },
+  { name: "Hardy", plus: null, minus: null },
+  { name: "Docile", plus: null, minus: null },
+  { name: "Serious", plus: null, minus: null },
+  { name: "Bashful", plus: null, minus: null },
+  { name: "Quirky", plus: null, minus: null },
+];
+const STAT_COLOR = { atk: "#E5484D", def: "#E8913A", spa: "#6390F0", spd: "#7AC74C", spe: "#FFCB05" };
+
+/* ----------------------------- helpers ----------------------------- */
+
+const norm = (e) => (typeof e === "string" ? { name: e, pct: null } : e);
+const monTypes = (m) => (m.types && m.types.length ? m.types : ["unknown"]);
+
+const MEGA_STONE = /ite(?: [XY])?$/;
+const isMegaUser = (m) =>
+  (m.items || []).some(e => {
+    const n = norm(e).name;
+    return MEGA_STONE.test(n) && n !== "Eviolite";
+  });
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildDeck({ mons, count, cats, statKey, doShuffle }) {
+  const pool = mons.slice(0, count);
+  const cards = [];
+  pool.forEach((mon) => {
+    cats.forEach((cat) => {
+      if (cat === "stats") {
+        if (mon.stats) cards.push({ mon, cat, statKey });
+      } else if (cat === "moves") {
+        const list = (mon.moves || []).map(norm);
+        if (list.some(e => e.pct != null)) cards.push({ mon, cat });
+      } else if (mon[cat] && mon[cat].length) {
+        cards.push({ mon, cat });
+      }
+    });
+  });
+  if (cats.includes("natureChart")) {
+    NATURE_CHART.forEach(n => cards.push({ nature: n, cat: "natureChart" }));
+  }
+  const deck = doShuffle ? shuffle(cards) : cards;
+  return deck.map((c, i) => ({
+    id: `${c.mon ? c.mon.name : c.nature.name}|${c.cat}|${i}`,
+    card: c, step: 0, lapses: 0, reviews: 0,
+  }));
+}
+
+function speedContext(mon, pool) {
+  const spe = mon.stats.spe;
+  const withStats = pool.filter(m => m.stats);
+  const faster = withStats.filter(m => m.stats.spe > spe && m.name !== mon.name)
+    .sort((a, b) => a.stats.spe - b.stats.spe)[0];
+  const ties = withStats.filter(m => m.stats.spe === spe && m.name !== mon.name);
+  const slower = withStats.filter(m => m.stats.spe < spe)
+    .sort((a, b) => b.stats.spe - a.stats.spe)[0];
+  return { faster, ties, slower };
+}
+
+/* -------------------------- PokéAPI sprites -------------------------- */
+/* Resolved lazily and cached. If PokéAPI is unreachable (e.g. inside a
+   chat artifact sandbox) everything falls back to the type orbs.       */
+
+const SLUG_OVERRIDES = {
+  "calyrex-shadow": "calyrex-shadow-rider",
+  "calyrex-ice": "calyrex-ice-rider",
+  "indeedee-f": "indeedee-female",
+  "indeedee-m": "indeedee-male",
+  "tornadus": "tornadus-incarnate",
+  "thundurus": "thundurus-incarnate",
+  "landorus": "landorus-incarnate",
+  "enamorus": "enamorus-incarnate",
+  "basculegion": "basculegion-male",
+  "maushold": "maushold-family-of-four",
+  "urshifu": "urshifu-single-strike",
+  "urshifu-rapid-strike": "urshifu-rapid-strike",
+  "giratina": "giratina-altered",
+  "zygarde": "zygarde-50",
+  "keldeo": "keldeo-ordinary",
+  "mimikyu": "mimikyu-disguised",
+  "toxtricity": "toxtricity-amped",
+};
+
+const spriteCache = {};
+
+async function resolveSprite(name) {
+  const key = name.toLowerCase();
+  if (spriteCache[key] !== undefined) return spriteCache[key];
+  const slug0 = key.replace(/[.'’%]/g, "").replace(/\s+/g, "-");
+  const slug = SLUG_OVERRIDES[slug0] || slug0;
+
+  const artworkFrom = async (s) => {
+    const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${s}`);
+    if (!r.ok) throw new Error("404");
+    const j = await r.json();
+    return (
+      (j.sprites && j.sprites.other && j.sprites.other["official-artwork"] &&
+        j.sprites.other["official-artwork"].front_default) ||
+      (j.sprites && j.sprites.front_default) || null
+    );
+  };
+
+  let url = null;
+  try {
+    url = await artworkFrom(slug);
+  } catch {
+    // fall back through the species' default variety
+    try {
+      const r = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${slug0.split("-")[0]}`);
+      if (r.ok) {
+        const j = await r.json();
+        const v = (j.varieties || []).find(x => x.is_default) || (j.varieties || [])[0];
+        if (v) url = await artworkFrom(v.pokemon.name);
+      }
+    } catch { /* offline or unknown — orb fallback */ }
+  }
+  spriteCache[key] = url;
+  return url;
+}
+
+function MonSprite({ mon, size = 56 }) {
+  const key = mon.name.toLowerCase();
+  const [url, setUrl] = useState(spriteCache[key]);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    setFailed(false);
+    if (spriteCache[key] !== undefined) setUrl(spriteCache[key]);
+    else resolveSprite(mon.name).then(u => { if (alive) setUrl(u); });
+    return () => { alive = false; };
+  }, [key]);
+
+  if (!url || failed) {
+    return <TypeOrb types={monTypes(mon)} size={size} text={mon.name[0]} />;
+  }
+  return (
+    <img
+      src={url} alt={mon.name} width={size} height={size} draggable={false}
+      onError={() => setFailed(true)}
+      style={{ objectFit: "contain", flexShrink: 0, filter: "drop-shadow(0 3px 5px rgba(0,0,0,.3))" }}
+    />
+  );
+}
+
+/* ----------------------------- atoms ----------------------------- */
+
+function TypeOrb({ types, size = 44, text }) {
+  const t = types && types.length ? types : ["unknown"];
+  const c1 = TYPE_COLORS[t[0]] || TYPE_COLORS.unknown;
+  const c2 = TYPE_COLORS[t[1] || t[0]] || TYPE_COLORS.unknown;
+  return (
+    <div
+      style={{
+        width: size, height: size, borderRadius: "50%",
+        background: `linear-gradient(135deg, ${c1} 0%, ${c1} 48%, ${c2} 52%, ${c2} 100%)`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "inset 0 -3px 6px rgba(0,0,0,.25), 0 2px 6px rgba(0,0,0,.35)",
+        flexShrink: 0,
+      }}
+      aria-hidden="true"
+    >
+      <span style={{
+        fontFamily: "var(--display)", fontWeight: 800, color: "rgba(255,255,255,.95)",
+        fontSize: size * 0.42, textShadow: "0 1px 2px rgba(0,0,0,.4)", letterSpacing: ".02em",
+      }}>{text}</span>
+    </div>
+  );
+}
+
+function TypeChip({ t }) {
+  return (
+    <span style={{
+      background: TYPE_COLORS[t] || TYPE_COLORS.unknown, color: "#fff", borderRadius: 4,
+      padding: "2px 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em",
+      textTransform: "uppercase", textShadow: "0 1px 1px rgba(0,0,0,.35)",
+    }}>{t}</span>
+  );
+}
+
+function NatureOrb({ nature, size = 44 }) {
+  const c1 = nature.plus ? STAT_COLOR[nature.plus] : "#8A8DA8";
+  const c2 = nature.minus ? STAT_COLOR[nature.minus] : "#8A8DA8";
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: `linear-gradient(135deg, ${c1} 0%, ${c1} 48%, ${c2} 52%, ${c2} 100%)`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      boxShadow: "inset 0 -3px 6px rgba(0,0,0,.25), 0 2px 6px rgba(0,0,0,.35)",
+      flexShrink: 0,
+    }} aria-hidden="true">
+      <span style={{
+        fontFamily: "var(--display)", fontWeight: 800, color: "rgba(255,255,255,.95)",
+        fontSize: size * 0.42, textShadow: "0 1px 2px rgba(0,0,0,.4)",
+      }}>{nature.name[0]}</span>
+    </div>
+  );
+}
+
+const panelStyle = {
+  background: "rgba(255,255,255,.045)",
+  border: "1px solid rgba(255,255,255,.09)",
+  borderRadius: 14, padding: "16px 16px", marginBottom: 14,
+};
+const panelHeadStyle = {
+  display: "flex", alignItems: "baseline", justifyContent: "space-between",
+  fontFamily: "var(--mono)", fontSize: 12, letterSpacing: ".12em",
+  textTransform: "uppercase", color: "rgba(255,255,255,.65)", marginBottom: 12,
+};
+
+function SubPill({ active, onClick, children, small }) {
+  return (
+    <button onClick={onClick} style={{
+      background: active ? "var(--gold)" : "rgba(255,255,255,.06)",
+      color: active ? "#1B1D36" : "rgba(255,255,255,.75)",
+      border: "1px solid " + (active ? "var(--gold)" : "rgba(255,255,255,.15)"),
+      borderRadius: 999, padding: small ? "4px 10px" : "5px 12px",
+      fontSize: small ? 12 : 13, fontWeight: 700, cursor: "pointer",
+    }}>{children}</button>
+  );
+}
+
+/* ----------------------------- config screen ----------------------------- */
+
+function ConfigScreen({ formats, generated, live, onStart }) {
+  const games = useMemo(() => [...new Set(formats.map(f => f.game))], [formats]);
+  const [gameLabel, setGameLabel] = useState(games[0]);
+  const regs = formats.filter(f => f.game === gameLabel);
+  const [regIdx, setRegIdx] = useState(0);
+  const reg = regs[Math.min(regIdx, regs.length - 1)];
+
+  const [mode, setMode] = useState("flash"); // 'flash' | 'duel'
+  const [count, setCount] = useState(20);
+  const [cat, setCat] = useState("stats");
+  const [statKey, setStatKey] = useState("spe");
+  const [doShuffle, setDoShuffle] = useState(true);
+  const [duelTarget, setDuelTarget] = useState(10);
+  const [duelVariant, setDuelVariant] = useState("faster"); // 'faster' | 'order'
+  const [duelHard, setDuelHard] = useState(false);
+  const [duelNatures, setDuelNatures] = useState(false);
+  const [includeMegas, setIncludeMegas] = useState(true);
+
+  const pickGame = (g) => { setGameLabel(g); setRegIdx(0); };
+
+  const hasMegaUsers = reg.mons.some(isMegaUser);
+  const availableMons = includeMegas ? reg.mons : reg.mons.filter(m => !isMegaUser(m));
+  const maxMons = availableMons.length;
+  const effCount = Math.min(count, maxMons);
+  const pool = availableMons.slice(0, effCount);
+  const catAvailable = (key) => key === "natureChart"
+    ? true
+    : key === "stats"
+      ? pool.some(m => m.stats)
+      : key === "moves"
+        ? pool.some(m => (m.moves || []).map(norm).some(e => e.pct != null))
+        : pool.some(m => m[key] && m[key].length);
+  const effectiveCats = catAvailable(cat) ? [cat] : [];
+  const duelPool = pool.filter(m => m.stats);
+  const deckPreview = mode === "flash"
+    ? buildDeck({ mons: reg.mons, count: effCount, cats: effectiveCats, statKey, doShuffle: false })
+    : [];
+  const canStart = mode === "flash"
+    ? deckPreview.length > 0
+    : duelPool.length >= (duelVariant === "order" ? 4 : 2);
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "28px 18px 40px" }}>
+      {/* hero */}
+      <div style={{ marginBottom: 22 }}>
+        <div style={{
+          fontFamily: "var(--mono)", fontSize: 11, letterSpacing: ".14em",
+          color: "var(--gold)", textTransform: "uppercase", marginBottom: 6,
+        }}>{gameLabel} · {reg.label}</div>
+        <h1 style={{
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 46, lineHeight: 1,
+          margin: 0, color: "#fff", letterSpacing: ".01em", textTransform: "uppercase",
+        }}>Meta Drill</h1>
+        <p style={{ color: "var(--muted)", fontSize: 14, margin: "10px 0 0", lineHeight: 1.5 }}>
+          Study what the ladder is actually running — spaced-repetition
+          flashcards, or a head-to-head speed game.
+        </p>
+      </div>
+
+      {/* mode */}
+      <section style={panelStyle}>
+        <div style={panelHeadStyle}><span>Mode</span></div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {[
+            { id: "flash", title: "Flashcards", sub: "spaced repetition" },
+            { id: "duel", title: "Speed Game", sub: "who moves first?" },
+          ].map(m => {
+            const on = mode === m.id;
+            return (
+              <button key={m.id} onClick={() => setMode(m.id)} style={{
+                flex: 1, padding: "12px 8px", borderRadius: 10, cursor: "pointer",
+                background: on ? "rgba(255,203,5,.12)" : "rgba(255,255,255,.04)",
+                border: `1.5px solid ${on ? "var(--gold)" : "rgba(255,255,255,.12)"}`,
+                color: "#fff", display: "flex", flexDirection: "column", gap: 2,
+              }}>
+                <span style={{
+                  fontFamily: "var(--display)", fontWeight: 800, fontSize: 20,
+                  textTransform: "uppercase", letterSpacing: ".04em",
+                }}>{m.title}</span>
+                <span style={{ color: "var(--muted)", fontSize: 12 }}>{m.sub}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* format */}
+      <section style={panelStyle}>
+        <div style={panelHeadStyle}><span>Format</span></div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          {games.map(g => {
+            const on = g === gameLabel;
+            return (
+              <button key={g} onClick={() => pickGame(g)} style={{
+                flex: 1, padding: "10px 8px", borderRadius: 10, cursor: "pointer",
+                background: on ? "rgba(255,203,5,.12)" : "rgba(255,255,255,.04)",
+                border: `1.5px solid ${on ? "var(--gold)" : "rgba(255,255,255,.12)"}`,
+                color: "#fff", fontWeight: 700, fontSize: 14,
+              }}>{g}</button>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {regs.map((r, idx) => {
+            const on = idx === Math.min(regIdx, regs.length - 1);
+            return (
+              <button key={r.id} onClick={() => setRegIdx(idx)} style={{
+                borderRadius: 999, padding: "6px 13px", cursor: "pointer",
+                fontSize: 13, fontWeight: 700,
+                background: on ? "var(--gold)" : "rgba(255,255,255,.06)",
+                color: on ? "#1B1D36" : "rgba(255,255,255,.85)",
+                border: "1px solid " + (on ? "var(--gold)" : "rgba(255,255,255,.15)"),
+              }}>{r.label}</button>
+            );
+          })}
+        </div>
+        {reg.noteText && (
+          <div style={{ marginTop: 12, fontSize: 12.5, lineHeight: 1.55, color: "var(--muted)" }}>
+            {reg.noteText}
+          </div>
+        )}
+      </section>
+
+      {/* mon count */}
+      <section style={panelStyle}>
+        <div style={panelHeadStyle}>
+          <span>Top Pokémon to study</span>
+          <span style={{
+            fontFamily: "var(--display)", fontWeight: 800, fontSize: 30,
+            color: "var(--gold)", lineHeight: 1,
+          }}>{effCount}</span>
+        </div>
+        <input
+          type="range" min={5} max={maxMons} step={1} value={effCount}
+          onChange={e => setCount(Number(e.target.value))}
+          style={{ width: "100%", accentColor: "#FFCB05" }}
+          aria-label="Number of top Pokémon to study"
+        />
+        {hasMegaUsers && (
+          <button
+            onClick={() => setIncludeMegas(v => !v)}
+            style={{
+              marginTop: 10, background: "transparent", cursor: "pointer",
+              border: "1.5px solid " + (includeMegas ? "rgba(255,255,255,.2)" : "var(--gold)"),
+              borderRadius: 999, padding: "7px 14px", color: "#fff",
+              fontSize: 13, fontWeight: 600,
+            }}
+          >
+            {includeMegas ? "✓ Including Mega users" : "Megas excluded — tap to include"}
+          </button>
+        )}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 12 }}>
+          {pool.map(m => (
+            <TypeOrb key={m.name} types={monTypes(m)} size={26} text={m.name[0]} />
+          ))}
+        </div>
+        <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 8 }}>
+          #1–#{effCount} by usage · #{effCount} is {pool[pool.length - 1].name}
+        </div>
+      </section>
+
+      {mode === "flash" ? (
+        <>
+          {/* categories */}
+          <section style={panelStyle}>
+            <div style={panelHeadStyle}><span>What to drill</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {CATEGORIES.map(c => {
+                const unavailable = !catAvailable(c.key);
+                const on = c.key === cat && !unavailable;
+                return (
+                  <div key={c.key}>
+                    <button
+                      onClick={() => !unavailable && setCat(c.key)}
+                      disabled={unavailable}
+                      style={{
+                        width: "100%", textAlign: "left",
+                        cursor: unavailable ? "default" : "pointer",
+                        opacity: unavailable ? 0.45 : 1,
+                        background: on ? "rgba(255,203,5,.10)" : "rgba(255,255,255,.04)",
+                        border: `1.5px solid ${on ? "var(--gold)" : "rgba(255,255,255,.12)"}`,
+                        borderRadius: 10, padding: "11px 14px", color: "#fff",
+                        display: "flex", alignItems: "center", gap: 12,
+                      }}
+                    >
+                      <span style={{
+                        width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+                        border: `2px solid ${on ? "var(--gold)" : "rgba(255,255,255,.35)"}`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>{on && <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--gold)" }} />}</span>
+                      <span style={{ fontWeight: 600, fontSize: 15 }}>{c.label}</span>
+                      <span style={{ color: "var(--muted)", fontSize: 12, marginLeft: "auto" }}>
+                        {unavailable
+                          ? (c.key === "moves" ? "needs usage % — arrives with the first data pull" : "no data in this snapshot yet")
+                          : c.hint}
+                      </span>
+                    </button>
+
+                    {c.key === "stats" && on && (
+                      <div style={{ margin: "8px 0 4px 30px", display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                        <span style={{ color: "var(--muted)", fontSize: 12 }}>Drill one stat:</span>
+                        {STAT_META.map(s => (
+                          <SubPill key={s.key} small active={statKey === s.key} onClick={() => setStatKey(s.key)}>
+                            {s.label}
+                          </SubPill>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* shuffle */}
+          <section style={{ ...panelStyle, display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              onClick={() => setDoShuffle(s => !s)}
+              style={{
+                background: "transparent", border: "1.5px solid rgba(255,255,255,.2)",
+                borderRadius: 999, padding: "7px 14px", color: "#fff", cursor: "pointer",
+                fontSize: 13, fontWeight: 600,
+              }}
+            >
+              {doShuffle ? "🔀 Shuffled" : "➡️ In usage order"}
+            </button>
+            <span style={{ color: "var(--muted)", fontSize: 13, marginLeft: "auto" }}>
+              {!canStart ? "No data for this category yet" : `${deckPreview.length} cards to learn`}
+            </span>
+          </section>
+        </>
+      ) : (
+        /* duel options */
+        <section style={panelStyle}>
+          <div style={panelHeadStyle}><span>Game type</span></div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {[
+              { id: "faster", title: "1v1 Duel", sub: "pick the faster mon" },
+              { id: "order", title: "2v2 Turn Order", sub: "order all four" },
+            ].map(v => {
+              const on = duelVariant === v.id;
+              return (
+                <button key={v.id} onClick={() => setDuelVariant(v.id)} style={{
+                  flex: 1, padding: "10px 8px", borderRadius: 10, cursor: "pointer",
+                  background: on ? "rgba(255,203,5,.12)" : "rgba(255,255,255,.04)",
+                  border: `1.5px solid ${on ? "var(--gold)" : "rgba(255,255,255,.12)"}`,
+                  color: "#fff", display: "flex", flexDirection: "column", gap: 2,
+                }}>
+                  <span style={{ fontWeight: 800, fontSize: 14 }}>{v.title}</span>
+                  <span style={{ color: "var(--muted)", fontSize: 11.5 }}>{v.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+          {duelVariant === "order" && (<>
+            <button
+              onClick={() => setDuelHard(v => !v)}
+              style={{
+                width: "100%", textAlign: "left", cursor: "pointer", marginBottom: 16,
+                background: duelHard ? "rgba(229,72,77,.12)" : "rgba(255,255,255,.04)",
+                border: `1.5px solid ${duelHard ? "#E5484D" : "rgba(255,255,255,.12)"}`,
+                borderRadius: 10, padding: "11px 14px", color: "#fff",
+                display: "flex", alignItems: "center", gap: 12,
+              }}
+            >
+              <span style={{
+                width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                border: `2px solid ${duelHard ? "#E5484D" : "rgba(255,255,255,.35)"}`,
+                background: duelHard ? "#E5484D" : "transparent",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#fff", fontSize: 12, fontWeight: 900,
+              }}>{duelHard ? "✓" : ""}</span>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>🔥 Hard mode</span>
+              <span style={{ color: "var(--muted)", fontSize: 11.5, marginLeft: "auto", textAlign: "right" }}>
+                Scarf · Tailwind · PAR · weather · Trick Room
+              </span>
+            </button>
+            {duelHard && (
+              <button
+                onClick={() => setDuelNatures(v => !v)}
+                style={{
+                  width: "100%", textAlign: "left", cursor: "pointer",
+                  marginTop: -8, marginBottom: 16, marginLeft: 0,
+                  background: duelNatures ? "rgba(255,203,5,.10)" : "rgba(255,255,255,.03)",
+                  border: `1.5px solid ${duelNatures ? "var(--gold)" : "rgba(255,255,255,.10)"}`,
+                  borderRadius: 10, padding: "10px 14px", color: "#fff",
+                  display: "flex", alignItems: "center", gap: 12,
+                }}
+              >
+                <span style={{
+                  width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                  border: `2px solid ${duelNatures ? "var(--gold)" : "rgba(255,255,255,.35)"}`,
+                  background: duelNatures ? "var(--gold)" : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#1B1D36", fontSize: 12, fontWeight: 900,
+                }}>{duelNatures ? "✓" : ""}</span>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>± Speed natures</span>
+                <span style={{ color: "var(--muted)", fontSize: 11.5, marginLeft: "auto", textAlign: "right" }}>
+                  Jolly/Timid ×1.1 · Brave/Quiet ×0.9
+                </span>
+              </button>
+            )}
+          </>)}
+          <div style={panelHeadStyle}><span>Wins to finish</span></div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {DUEL_TARGETS.map(t => {
+              const on = duelTarget === t;
+              return (
+                <button key={t} onClick={() => setDuelTarget(t)} style={{
+                  flex: 1, padding: "12px 4px", borderRadius: 10, cursor: "pointer",
+                  background: on ? "var(--gold)" : "rgba(255,255,255,.05)",
+                  border: `1.5px solid ${on ? "var(--gold)" : "rgba(255,255,255,.14)"}`,
+                  color: on ? "#1B1D36" : "#fff",
+                  fontFamily: "var(--display)", fontWeight: 800, fontSize: 24, lineHeight: 1,
+                }}>{t}</button>
+              );
+            })}
+          </div>
+          <div style={{ color: "var(--muted)", fontSize: 12.5, marginTop: 12, lineHeight: 1.5 }}>
+            {duelVariant === "faster"
+              ? `Two random Pokémon from your top ${effCount}, side by side. Pick who's faster by base Speed — watch out, speed ties are real answers.`
+              : duelHard
+                ? `A full 2v2 field from your top ${effCount} — with speed control live. Watch the weather banner, Trick Room, Tailwind side, Choice Scarfs, paralysis, and weather abilities like Swift Swim or Chlorophyll, then tap all four in the order they actually move. Ties can go in either order.`
+                : `A full 2v2 field from your top ${effCount}. Tap all four in the order they move, fastest first. Tied Pokémon can go in either order.`}
+            {" "}Wrong answers don't count toward your total.
+          </div>
+        </section>
+      )}
+
+      <button
+        disabled={!canStart}
+        onClick={() => onStart({
+          mode, reg,
+          deckCfg: { mons: availableMons, count: effCount, cats: effectiveCats, statKey, doShuffle },
+          duelCfg: { target: duelTarget, variant: duelVariant, hard: duelHard, natures: duelHard && duelNatures },
+        })}
+        style={{
+          width: "100%", marginTop: 6, padding: "16px", borderRadius: 12, border: "none",
+          background: !canStart ? "rgba(255,255,255,.12)" : "var(--gold)",
+          color: !canStart ? "rgba(255,255,255,.4)" : "#1B1D36",
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 22, letterSpacing: ".06em",
+          textTransform: "uppercase", cursor: !canStart ? "default" : "pointer",
+          boxShadow: !canStart ? "none" : "0 4px 18px rgba(255,203,5,.35)",
+        }}
+      >
+        {mode === "flash" ? "Start drilling" : duelVariant === "order" ? (duelHard ? "Start hard mode" : "Start turn order") : "Start speed duel"}
+      </button>
+
+      <p style={{
+        color: "var(--muted)", fontSize: 11.5, marginTop: 18, lineHeight: 1.6,
+        borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12,
+      }}>
+        {reg.source}. Lists are in ladder usage order.
+        {" "}Data as of {generated}{live ? " (auto-refreshed nightly)" : " (bundled snapshot — deploy for nightly refresh)"}.
+        {" "}Artwork from PokéAPI. Flashcard grading: Again resets a card, Hard
+        brings it back soon, Good advances it, Easy retires it — two Goods
+        (or one Easy) clears a card.
+      </p>
+    </div>
+  );
+}
+
+/* ----------------------------- quiz screen ----------------------------- */
+
+const CAT_PROMPT = {
+  moves: "Top moves?",
+  natures: "Most common natures?",
+  natureChart: "Raises what, lowers what?",
+  items: "Most common items?",
+  abilities: "Most common ability?",
+};
+
+const GRADES = [
+  { key: "again", label: "Again", color: "#E5484D" },
+  { key: "hard", label: "Hard", color: "#E8913A" },
+  { key: "good", label: "Good", color: "#30A46C" },
+  { key: "easy", label: "Easy", color: "#4A8FE7" },
+];
+
+/* The moves game's rule: select every move with over 30% usage.
+   Requires real percentage data — there is no fallback rule. */
+function movesTarget(original) {
+  return new Set(original.filter(e => e.pct != null && e.pct > 30).map(e => e.name));
+}
+
+function MovesGame({ entries, original, picks, onToggle, submitted }) {
+  if (!entries) return null;
+  const target = movesTarget(original);
+  const rankOf = Object.fromEntries(original.map((e, i) => [e.name, i + 1]));
+  let right = 0, wrong = 0, missed = 0;
+  if (submitted) {
+    entries.forEach(e => {
+      const isT = target.has(e.name), isP = picks.has(e.name);
+      if (isT && isP) right++;
+      else if (!isT && isP) wrong++;
+      else if (isT && !isP) missed++;
+    });
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      {submitted && (
+        <div style={{
+          fontSize: 13.5, fontWeight: 800, marginBottom: 4,
+          color: wrong + missed === 0 ? "#1E7A4D" : "#C0353A",
+        }}>
+          {wrong + missed === 0 ? "Perfect! 🎯" : `${right} right · ${missed} missed · ${wrong} wrong`}
+        </div>
+      )}
+      {entries.map(e => {
+        const isP = picks.has(e.name);
+        const isT = target.has(e.name);
+        let bg = "#fff", border = "#D5D8E4", color = "#22243E";
+        if (!submitted && isP) { border = "#C9A100"; bg = "rgba(255,203,5,.15)"; }
+        if (submitted) {
+          if (isT && isP) { border = "#30A46C"; bg = "rgba(48,164,108,.12)"; }
+          else if (!isT && isP) { border = "#E5484D"; bg = "rgba(229,72,77,.10)"; }
+          else if (isT && !isP) { border = "#E8913A"; bg = "rgba(232,145,58,.14)"; }
+          else { color = "#9DA0B8"; }
+        }
+        return (
+          <button
+            key={e.name}
+            onClick={() => onToggle(e.name)}
+            disabled={submitted}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, textAlign: "left",
+              background: bg, border: `1.5px solid ${border}`, borderRadius: 9,
+              padding: "9px 12px", cursor: submitted ? "default" : "pointer", color,
+            }}
+          >
+            <span style={{
+              width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+              border: `2px solid ${isP ? "#C9A100" : "#B7BACB"}`,
+              background: isP ? "#FFCB05" : "transparent",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 10, fontWeight: 900, color: "#1B1D36",
+            }}>{isP ? "✓" : ""}</span>
+            <span style={{ fontSize: 15, fontWeight: submitted && isT ? 800 : 600 }}>{e.name}</span>
+            {submitted && (
+              <span style={{
+                marginLeft: "auto", display: "flex", flexDirection: "column",
+                alignItems: "flex-end", gap: 3, flexShrink: 0,
+              }}>
+                <span style={{
+                  fontFamily: "var(--mono)", fontSize: 12.5, fontWeight: 700,
+                  color: isT ? "#1E7A4D" : "#9DA0B8",
+                }}>
+                  {e.pct != null ? `${e.pct}%` : `#${rankOf[e.name]}`}{isT && !isP ? " · missed" : ""}
+                </span>
+                {e.pct != null && (
+                  <span style={{
+                    width: 46, height: 4, borderRadius: 999,
+                    background: "#E4E6F0", overflow: "hidden", display: "block",
+                  }}>
+                    <span style={{
+                      display: "block", width: `${Math.min(100, e.pct)}%`, height: "100%",
+                      background: isT ? "#30A46C" : "#B7BACB",
+                    }} />
+                  </span>
+                )}
+              </span>
+            )}
+          </button>
+        );
+      })}
+      {!submitted && (
+        <div style={{ fontSize: 11.5, color: "#9DA0B8", marginTop: 2 }}>
+          Tap to select, then check your answer below.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuizScreen({ initialQueue, pool, reg, onDone, onQuit }) {
+  const total = initialQueue.length;
+  const [queue, setQueue] = useState(initialQueue);
+  const [doneCards, setDoneCards] = useState([]);
+  const [flipped, setFlipped] = useState(false);
+  const [log, setLog] = useState({ again: 0, hard: 0, good: 0, easy: 0 });
+  const [picks, setPicks] = useState(new Set());
+
+  const item = queue[0];
+  const shuffledMoves = useMemo(() => {
+    if (!item || item.card.cat !== "moves") return null;
+    return shuffle((item.card.mon.moves || []).map(norm));
+  }, [item && item.id]);
+
+  const gradeHint = (g) => {
+    if (!item) return "";
+    if (g === "easy") return "done ✓";
+    if (g === "good") return item.step + 1 >= SRS.GRADUATE_STEPS ? "done ✓" : `~${SRS.GAPS.good} cards`;
+    if (g === "hard") return `~${SRS.GAPS.hard} cards`;
+    return `~${SRS.GAPS.again} cards`;
+  };
+
+  const grade = (g) => {
+    if (!item) return;
+    const nextLog = { ...log, [g]: log[g] + 1 };
+    const rest = queue.slice(1);
+    const updated = { ...item, reviews: item.reviews + 1 };
+
+    let graduated = false;
+    if (g === "easy") graduated = true;
+    else if (g === "good") {
+      updated.step = item.step + 1;
+      graduated = updated.step >= SRS.GRADUATE_STEPS;
+    } else if (g === "hard") {
+      updated.step = item.step;
+    } else {
+      updated.step = 0;
+      updated.lapses = item.lapses + 1;
+    }
+
+    if (graduated) {
+      const nextDone = [...doneCards, updated];
+      if (rest.length === 0) { onDone({ done: nextDone, log: nextLog, total }); return; }
+      setDoneCards(nextDone);
+      setQueue(rest);
+    } else {
+      const gap = SRS.GAPS[g] + Math.floor(Math.random() * (SRS.JITTER + 1));
+      const pos = Math.min(gap, rest.length);
+      setQueue([...rest.slice(0, pos), updated, ...rest.slice(pos)]);
+    }
+    setLog(nextLog);
+    setFlipped(false);
+    setPicks(new Set());
+  };
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === " " || e.key === "Enter") {
+        if (!flipped) { e.preventDefault(); setFlipped(true); }
+      } else if (flipped && ["1", "2", "3", "4"].includes(e.key)) {
+        e.preventDefault();
+        grade(GRADES[Number(e.key) - 1].key);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  if (!item) return null;
+  const { card } = item;
+  const newCount = queue.filter(q => q.reviews === 0).length;
+  const learningCount = queue.length - newCount;
+
+  const prompt = card.cat === "stats"
+    ? `Base ${STAT_LABEL[card.statKey]}?`
+    : card.cat === "moves"
+      ? "Select every move over 30% usage"
+      : CAT_PROMPT[card.cat];
+
+  const stateChip = item.reviews === 0
+    ? { text: "new", color: "#4A8FE7" }
+    : item.lapses > 0 && item.step === 0
+      ? { text: "relearning", color: "#E5484D" }
+      : { text: `learning ${item.step}/${SRS.GRADUATE_STEPS}`, color: "#E8913A" };
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "18px 18px 40px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+        <button onClick={onQuit} style={{
+          background: "transparent", border: "none", color: "var(--muted)",
+          fontSize: 13, cursor: "pointer", padding: 4,
+        }}>← End</button>
+        <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,.1)", borderRadius: 999 }}>
+          <div style={{
+            width: `${(doneCards.length / total) * 100}%`, height: "100%",
+            background: "var(--gold)", borderRadius: 999, transition: "width .25s",
+          }} />
+        </div>
+      </div>
+      <div style={{
+        display: "flex", gap: 14, justifyContent: "flex-end", marginBottom: 12,
+        fontFamily: "var(--mono)", fontSize: 12,
+      }}>
+        <span style={{ color: "#7FB0F0" }}>{newCount} new</span>
+        <span style={{ color: "#F0A45C" }}>{learningCount} learning</span>
+        <span style={{ color: "#6FCF97" }}>{doneCards.length} done</span>
+      </div>
+
+      <div
+        role="button" tabIndex={0} aria-label={flipped ? "Answer shown" : "Tap to reveal answer"}
+        onClick={() => { if (card.cat !== "moves") setFlipped(true); }}
+        onKeyDown={e => { if (card.cat !== "moves" && (e.key === " " || e.key === "Enter")) { e.preventDefault(); setFlipped(true); } }}
+        style={{
+          background: "#F5F6FA", borderRadius: 18, minHeight: 380,
+          padding: "22px 20px", color: "#22243E", cursor: flipped ? "default" : "pointer",
+          boxShadow: "0 10px 30px rgba(0,0,0,.45), 0 2px 0 rgba(255,255,255,.15) inset",
+          display: "flex", flexDirection: "column",
+          outline: "none",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {card.mon ? <MonSprite mon={card.mon} size={56} /> : <NatureOrb nature={card.nature} size={56} />}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontFamily: "var(--display)", fontWeight: 800, fontSize: 30, lineHeight: 1.02,
+              textTransform: "uppercase", letterSpacing: ".01em", overflowWrap: "anywhere",
+            }}>{card.mon ? card.mon.name : card.nature.name}</div>
+            {card.mon ? (
+              <div style={{ display: "flex", gap: 6, marginTop: 5, alignItems: "center", flexWrap: "wrap" }}>
+                {monTypes(card.mon).filter(t => t !== "unknown").map(t => <TypeChip key={t} t={t} />)}
+                <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "#8A8DA8" }}>
+                  usage #{card.mon.rank}{card.mon.usage != null ? ` · ${card.mon.usage}%` : ""}
+                </span>
+                {reg.hasWinrate && card.mon.winrate != null && (
+                  <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "#8A8DA8" }}>
+                    · {card.mon.winrate}% WR
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div style={{ marginTop: 5 }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "#8A8DA8" }}>nature chart</span>
+              </div>
+            )}
+          </div>
+          <span style={{
+            fontFamily: "var(--mono)", fontSize: 10.5, color: stateChip.color,
+            border: `1px solid ${stateChip.color}`, borderRadius: 999, padding: "3px 9px",
+            whiteSpace: "nowrap", alignSelf: "flex-start",
+          }}>{stateChip.text}</span>
+        </div>
+
+        <div style={{ height: 1, background: "#DDDFEA", margin: "16px 0" }} />
+
+        <div style={{
+          fontFamily: "var(--mono)", fontSize: 12, letterSpacing: ".14em",
+          textTransform: "uppercase", color: "#8A8DA8", marginBottom: 10,
+        }}>{prompt}</div>
+
+        {card.cat === "moves" ? (
+          <MovesGame
+            entries={shuffledMoves}
+            original={(card.mon.moves || []).map(norm)}
+            picks={picks}
+            submitted={flipped}
+            onToggle={(name) => {
+              if (flipped) return;
+              setPicks(prev => {
+                const next = new Set(prev);
+                next.has(name) ? next.delete(name) : next.add(name);
+                return next;
+              });
+            }}
+          />
+        ) : !flipped ? (
+          <div style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#B7BACB", fontSize: 15, fontWeight: 600,
+          }}>Tap to reveal</div>
+        ) : (
+          <Answer card={card} pool={pool} />
+        )}
+      </div>
+
+      <div style={{ marginTop: 16, minHeight: 74 }}>
+        {flipped ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            {GRADES.map(g => (
+              <button key={g.key} onClick={() => grade(g.key)} style={{
+                borderRadius: 12, border: "none", background: g.color, color: "#fff",
+                cursor: "pointer", padding: "11px 4px 9px",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                boxShadow: "0 4px 14px rgba(0,0,0,.35)",
+              }}>
+                <span style={{
+                  fontFamily: "var(--display)", fontWeight: 800, fontSize: 18,
+                  letterSpacing: ".04em", textTransform: "uppercase", lineHeight: 1,
+                }}>{g.label}</span>
+                <span style={{ fontSize: 10.5, opacity: .9, fontFamily: "var(--mono)" }}>
+                  {gradeHint(g.key)}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button onClick={() => setFlipped(true)} style={{
+            width: "100%", borderRadius: 12, border: "1.5px solid rgba(255,255,255,.25)",
+            background: "transparent", color: "#fff", fontWeight: 700, fontSize: 16,
+            cursor: "pointer", padding: "14px",
+          }}>{card.cat === "moves" ? `Check answer (${picks.size} selected)` : "Reveal"}</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- answers ----------------------------- */
+
+function Answer({ card, pool }) {
+  const { mon, cat } = card;
+
+  if (cat === "natureChart") {
+    const n = card.nature;
+    if (!n.plus) {
+      return (
+        <div>
+          <div style={{
+            fontFamily: "var(--display)", fontWeight: 800, fontSize: 44, lineHeight: 1,
+            color: "#8A8DA8",
+          }}>Neutral</div>
+          <div style={{ marginTop: 10, fontSize: 14, color: "#4A4D6B" }}>
+            No stat changes — all ×1.0. One of the five flavor-only natures.
+          </div>
+        </div>
+      );
+    }
+    const row = (dir, statKey) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 34, lineHeight: 1,
+          color: dir === "+" ? "#1E7A4D" : "#C0353A", width: 30, textAlign: "center",
+        }}>{dir === "+" ? "▲" : "▼"}</span>
+        <span style={{
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 42, lineHeight: 1,
+          color: "#22243E",
+        }}>{STAT_LABEL[statKey]}</span>
+        <span style={{
+          marginLeft: "auto", fontFamily: "var(--mono)", fontSize: 14,
+          color: dir === "+" ? "#1E7A4D" : "#C0353A", fontWeight: 700,
+        }}>{dir === "+" ? "+10%" : "−10%"}</span>
+        <span style={{
+          width: 14, height: 14, borderRadius: "50%", background: STAT_COLOR[statKey],
+          boxShadow: "inset 0 -2px 3px rgba(0,0,0,.25)",
+        }} />
+      </div>
+    );
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 18, marginTop: 6 }}>
+        {row("+", n.plus)}
+        {row("-", n.minus)}
+      </div>
+    );
+  }
+
+  if (cat === "stats") {
+    const val = mon.stats[card.statKey];
+    const isSpeed = card.statKey === "spe";
+    const ctx = isSpeed ? speedContext(mon, pool) : null;
+    return (
+      <div>
+        <div style={{
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 88, lineHeight: 1,
+          color: "#22243E",
+        }}>
+          {val}
+          <span style={{ fontSize: 22, color: "#8A8DA8", marginLeft: 8 }}>
+            base {STAT_LABEL[card.statKey]}
+          </span>
+        </div>
+        {isSpeed && ctx && (
+          <div style={{
+            marginTop: 14, fontSize: 13.5, lineHeight: 1.7, color: "#4A4D6B",
+            borderLeft: "3px solid #FFCB05", paddingLeft: 12,
+          }}>
+            {ctx.slower && <div>Outspeeds <b>{ctx.slower.name}</b> ({ctx.slower.stats.spe})</div>}
+            {ctx.ties.length > 0 && <div>Speed-ties <b>{ctx.ties.map(t => t.name).join(", ")}</b></div>}
+            {ctx.faster && <div>Slower than <b>{ctx.faster.name}</b> ({ctx.faster.stats.spe})</div>}
+            {!ctx.faster && <div><b>Fastest</b> of your studied set</div>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const list = (mon[cat] || []).map(norm);
+  return (
+    <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 7 }}>
+      {list.map((entry, idx) => (
+        <li key={entry.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{
+            fontFamily: "var(--display)", fontWeight: 800, fontSize: 16,
+            color: idx === 0 ? "#C9A100" : "#B0B3C6", width: 22, textAlign: "right",
+          }}>{idx + 1}</span>
+          <span style={{
+            fontSize: 16.5, fontWeight: idx === 0 ? 800 : 500,
+            color: idx === 0 ? "#22243E" : "#4A4D6B",
+          }}>{entry.name}</span>
+          {entry.pct != null && (
+            <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "#9DA0B8", marginLeft: "auto" }}>
+              {entry.pct}%
+            </span>
+          )}
+        </li>
+      ))}
+      <li style={{ fontSize: 11.5, color: "#9DA0B8", marginTop: 4, paddingLeft: 32 }}>
+        in ladder usage order
+      </li>
+    </ol>
+  );
+}
+
+/* ----------------------------- speed duel ----------------------------- */
+
+function samplePair(pool, prevKey) {
+  for (let tries = 0; tries < 20; tries++) {
+    const a = pool[Math.floor(Math.random() * pool.length)];
+    let b = pool[Math.floor(Math.random() * pool.length)];
+    if (a.name === b.name) continue;
+    const key = [a.name, b.name].sort().join("|");
+    if (key === prevKey && tries < 15) continue;
+    return { pair: [a, b], key };
+  }
+  return { pair: [pool[0], pool[1]], key: null };
+}
+
+function DuelScreen({ pool, target, onDone, onQuit }) {
+  const [round, setRound] = useState(() => samplePair(pool, null));
+  const [wins, setWins] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [picked, setPicked] = useState(null); // 0 | 1 | 'tie' | null
+
+  const [a, b] = round.pair;
+  const correct = a.stats.spe > b.stats.spe ? 0 : b.stats.spe > a.stats.spe ? 1 : "tie";
+  const answered = picked !== null;
+  const wasRight = answered && picked === correct;
+
+  const pick = (choice) => {
+    if (answered) return;
+    setPicked(choice);
+    setAttempts(n => n + 1);
+    if (choice === correct) {
+      setWins(w => w + 1);
+      setStreak(s => {
+        const ns = s + 1;
+        setBestStreak(bs => Math.max(bs, ns));
+        return ns;
+      });
+    } else {
+      setStreak(0);
+    }
+  };
+
+  const next = () => {
+    if (wasRight && wins >= target) {
+      onDone({ target, attempts, bestStreak });
+      return;
+    }
+    setPicked(null);
+    setRound(samplePair(pool, round.key));
+  };
+
+  const duelCard = (mon, idx) => {
+    const isCorrectSide = correct === idx;
+    const border = !answered
+      ? "rgba(255,255,255,.14)"
+      : isCorrectSide ? "#30A46C"
+      : picked === idx ? "#E5484D" : "rgba(255,255,255,.14)";
+    return (
+      <button
+        key={mon.name}
+        onClick={() => pick(idx)}
+        disabled={answered}
+        style={{
+          flex: 1, minWidth: 0, cursor: answered ? "default" : "pointer",
+          background: "#F5F6FA", borderRadius: 16, padding: "16px 10px 14px",
+          border: `2.5px solid ${border}`,
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+          color: "#22243E",
+          boxShadow: "0 8px 24px rgba(0,0,0,.4)",
+          transition: "border-color .15s",
+        }}
+      >
+        <MonSprite mon={mon} size={96} />
+        <div style={{
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 20, lineHeight: 1.05,
+          textTransform: "uppercase", textAlign: "center", overflowWrap: "anywhere",
+        }}>{mon.name}</div>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center" }}>
+          {monTypes(mon).filter(t => t !== "unknown").map(t => <TypeChip key={t} t={t} />)}
+        </div>
+        <div style={{
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 34, lineHeight: 1,
+          color: answered ? (isCorrectSide ? "#1E7A4D" : "#8A8DA8") : "transparent",
+          minHeight: 34, transition: "color .15s",
+        }}>
+          {answered ? mon.stats.spe : "?"}
+        </div>
+      </button>
+    );
+  };
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "18px 18px 40px" }}>
+      {/* top bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <button onClick={onQuit} style={{
+          background: "transparent", border: "none", color: "var(--muted)",
+          fontSize: 13, cursor: "pointer", padding: 4,
+        }}>← End</button>
+        <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,.1)", borderRadius: 999 }}>
+          <div style={{
+            width: `${(wins / target) * 100}%`, height: "100%",
+            background: "var(--gold)", borderRadius: 999, transition: "width .25s",
+          }} />
+        </div>
+        <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--muted)" }}>
+          {wins}/{target} wins
+        </span>
+      </div>
+      <div style={{
+        display: "flex", justifyContent: "flex-end", marginBottom: 14,
+        fontFamily: "var(--mono)", fontSize: 12, color: streak >= 3 ? "var(--gold)" : "var(--muted)",
+      }}>
+        {streak > 0 ? `🔥 ${streak} streak` : " "}
+      </div>
+
+      <div style={{
+        textAlign: "center", fontFamily: "var(--mono)", fontSize: 12,
+        letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)",
+        marginBottom: 12,
+      }}>Which is faster (base Speed)?</div>
+
+      {/* the duel */}
+      <div style={{ display: "flex", gap: 10, alignItems: "stretch", position: "relative" }}>
+        {duelCard(a, 0)}
+        {duelCard(b, 1)}
+        <div style={{
+          position: "absolute", left: "50%", top: "38%", transform: "translate(-50%,-50%)",
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 26, color: "var(--gold)",
+          textShadow: "0 2px 8px rgba(0,0,0,.6)", pointerEvents: "none", letterSpacing: ".04em",
+        }}>VS</div>
+      </div>
+
+      {/* tie button / result */}
+      <div style={{ marginTop: 12 }}>
+        {!answered ? (
+          <button onClick={() => pick("tie")} style={{
+            width: "100%", borderRadius: 12, border: "1.5px solid rgba(255,255,255,.25)",
+            background: "transparent", color: "#fff", fontWeight: 700, fontSize: 15,
+            cursor: "pointer", padding: "13px",
+          }}>⚖️ Speed tie</button>
+        ) : (
+          <>
+            <div style={{
+              borderRadius: 12, padding: "12px 14px", marginBottom: 10,
+              background: wasRight ? "rgba(48,164,108,.15)" : "rgba(229,72,77,.15)",
+              border: `1.5px solid ${wasRight ? "#30A46C" : "#E5484D"}`,
+              color: "#fff", fontSize: 14.5, lineHeight: 1.5, textAlign: "center",
+            }}>
+              <b>{wasRight ? "Correct!" : "Not quite."}</b>{" "}
+              {correct === "tie"
+                ? `${a.name} and ${b.name} speed-tie at ${a.stats.spe} — it's a coin flip.`
+                : `${round.pair[correct].name} is faster, ${round.pair[correct].stats.spe} to ${round.pair[correct === 0 ? 1 : 0].stats.spe}.`}
+            </div>
+            <button onClick={next} style={{
+              width: "100%", padding: "14px", borderRadius: 12, border: "none",
+              background: "var(--gold)", color: "#1B1D36", cursor: "pointer",
+              fontFamily: "var(--display)", fontWeight: 800, fontSize: 20,
+              textTransform: "uppercase", letterSpacing: ".05em",
+              boxShadow: "0 4px 18px rgba(255,203,5,.35)",
+            }}>
+              {wasRight && wins >= target ? "Finish 🏆" : "Next duel →"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- turn order (2v2) ----------------------------- */
+
+const WEATHER_META = {
+  rain: { label: "Rain", icon: "🌧️", color: "#6390F0", abilities: ["Swift Swim"] },
+  sun: { label: "Harsh Sun", icon: "☀️", color: "#EE8130", abilities: ["Chlorophyll"] },
+  sand: { label: "Sandstorm", icon: "🌪️", color: "#B6A136", abilities: ["Sand Rush"] },
+  snow: { label: "Snow", icon: "❄️", color: "#96D9D6", abilities: ["Slush Rush"] },
+};
+
+/* Natures that touch Speed (+10% / -10%). */
+const NATURE_PLUS_SPE = ["Timid", "Jolly", "Hasty", "Naive"];
+const NATURE_MINUS_SPE = ["Brave", "Quiet", "Relaxed", "Sassy"];
+const natureSpeedMult = (n) =>
+  NATURE_PLUS_SPE.includes(n) ? 1.1 : NATURE_MINUS_SPE.includes(n) ? 0.9 : 1;
+
+/* Abilities that put weather up when their holder is on the field. */
+const WEATHER_SETTERS = {
+  "Drizzle": "rain", "Primordial Sea": "rain",
+  "Drought": "sun", "Orichalcum Pulse": "sun", "Desolate Land": "sun",
+  "Sand Stream": "sand", "Sand Spit": "sand",
+  "Snow Warning": "snow",
+};
+
+const hasAbility = (mon, name) =>
+  (mon.abilities || []).map(norm).some(a => a.name === name || a.name.indexOf(name) === 0);
+
+/* The speed-doubling ability this mon gets under weather w, if any. */
+const boostAbility = (mon, w) =>
+  w ? (WEATHER_META[w].abilities.find(a => hasAbility(mon, a)) || null) : null;
+
+function buildRound(pool, prevKey, hard, useNatures) {
+  let mons = pool.slice(0, 4), key = null;
+  for (let tries = 0; tries < 30; tries++) {
+    mons = shuffle(pool).slice(0, 4);
+    key = mons.map(m => m.name).sort().join("|");
+    if (key !== prevKey || tries >= 25) break;
+  }
+  const mods = { weather: null, weatherSetBy: null, trickRoom: false, tailwindSide: null, scarf: [], para: [], natures: {} };
+  if (hard) {
+    const setters = [];
+    mons.forEach(m => {
+      Object.entries(WEATHER_SETTERS).forEach(([ab, w]) => {
+        if (hasAbility(m, ab)) setters.push({ name: m.name, ability: ab, weather: w });
+      });
+    });
+    if (setters.length) {
+      // Coin flip: even with a setter fielded, sometimes your weather is down.
+      if (Math.random() < 0.5) {
+        const s = setters[Math.floor(Math.random() * setters.length)];
+        mods.weather = s.weather;
+        mods.weatherSetBy = s;
+      }
+    } else {
+      const relevant = Object.keys(WEATHER_META).filter(w => mons.some(m => boostAbility(m, w)));
+      const r = Math.random();
+      if (relevant.length && r < 0.5) {
+        mods.weather = relevant[Math.floor(Math.random() * relevant.length)];
+      } else if (r < 0.65) {
+        const ws = Object.keys(WEATHER_META);
+        mods.weather = ws[Math.floor(Math.random() * ws.length)];
+      }
+    }
+    if (useNatures) {
+      // Speed-relevant natures only: every chip on the field changes the
+      // math. ~35% +Spe, ~35% −Spe, ~30% no chip (neutral).
+      mons.forEach(m => {
+        const r = Math.random();
+        if (r < 0.35) {
+          mods.natures[m.name] = NATURE_PLUS_SPE[Math.floor(Math.random() * NATURE_PLUS_SPE.length)];
+        } else if (r < 0.7) {
+          mods.natures[m.name] = NATURE_MINUS_SPE[Math.floor(Math.random() * NATURE_MINUS_SPE.length)];
+        }
+      });
+    }
+    if (Math.random() < 0.3) mods.tailwindSide = Math.random() < 0.5 ? 0 : 1;
+    if (Math.random() < 0.18) mods.trickRoom = true;
+    mons.forEach(m => {
+      if (mods.scarf.length < 2 && Math.random() < 0.15) mods.scarf.push(m.name);
+    });
+    const paraPool = mons.filter(m => !mods.scarf.includes(m.name));
+    if (Math.random() < 0.25 && paraPool.length) {
+      mods.para.push(paraPool[Math.floor(Math.random() * paraPool.length)].name);
+    }
+    // guarantee at least one modifier that changes the math
+    const weatherMatters = mods.weather && mons.some(m => boostAbility(m, mods.weather));
+    if (!mods.trickRoom && mods.tailwindSide === null &&
+        !mods.scarf.length && !mods.para.length && !weatherMatters) {
+      mods.scarf.push(mons[Math.floor(Math.random() * 4)].name);
+    }
+  }
+  return { mons, key, mods };
+}
+
+/* Effective speed: base ×1.5 Scarf ×2 Tailwind ×2 weather ability ×0.5 PAR, floored. */
+function effSpeed(mon, side, mods) {
+  let s = mon.stats.spe;
+  const parts = [];
+  const nat = mods.natures && mods.natures[mon.name];
+  const natMult = nat ? natureSpeedMult(nat) : 1;
+  if (natMult !== 1) {
+    s = Math.floor(s * natMult);
+    parts.push(`×${natMult} ${nat}`);
+  }
+  if (mods.scarf.includes(mon.name)) { s *= 1.5; parts.push("×1.5 Scarf"); }
+  if (mods.tailwindSide === side) { s *= 2; parts.push("×2 Tailwind"); }
+  const wAb = boostAbility(mon, mods.weather);
+  if (wAb) { s *= 2; parts.push("×2 " + wAb); }
+  if (mods.para.includes(mon.name)) { s *= 0.5; parts.push("×0.5 PAR"); }
+  return { value: Math.floor(s), breakdown: parts.length ? mon.stats.spe + " " + parts.join(" ") : null };
+}
+
+function ModChip({ text, bg, fg }) {
+  return (
+    <span style={{
+      background: bg, color: fg || "#fff", borderRadius: 4, padding: "1.5px 6px",
+      fontSize: 10, fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase",
+      whiteSpace: "nowrap",
+    }}>{text}</span>
+  );
+}
+
+function TurnOrderScreen({ pool, target, hard, natures, onDone, onQuit }) {
+  const [round, setRound] = useState(() => buildRound(pool, null, hard, natures));
+  const [order, setOrder] = useState([]); // mon names in picked order
+  const [wins, setWins] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+
+  const { mons, mods } = round;
+  const sideOf = (mon) => (mons.indexOf(mon) < 2 ? 0 : 1);
+  const eff = Object.fromEntries(mons.map(m => [m.name, effSpeed(m, sideOf(m), mods)]));
+
+  const isValidOrder = (names) => {
+    const v = names.map(n => eff[n].value);
+    return mods.trickRoom
+      ? v.every((s, i) => i === 0 || v[i - 1] <= s)
+      : v.every((s, i) => i === 0 || v[i - 1] >= s);
+  };
+
+  const answered = order.length === 4;
+  const wasRight = answered && isValidOrder(order);
+
+  const tap = (name) => {
+    if (answered) return;
+    const idx = order.indexOf(name);
+    if (idx !== -1) { setOrder(order.slice(0, idx)); return; }
+    const next = [...order, name];
+    setOrder(next);
+    if (next.length === 4) {
+      setAttempts(a => a + 1);
+      if (isValidOrder(next)) {
+        setWins(w => w + 1);
+        setStreak(s => { const ns = s + 1; setBestStreak(b => Math.max(b, ns)); return ns; });
+      } else {
+        setStreak(0);
+      }
+    }
+  };
+
+  const nextRound = () => {
+    if (wasRight && wins >= target) { onDone({ target, attempts, bestStreak }); return; }
+    setOrder([]);
+    setRound(buildRound(pool, round.key, hard, natures));
+  };
+
+  // correct order text, grouped by effective speed
+  const sorted = [...mons].sort((a, b) =>
+    mods.trickRoom ? eff[a.name].value - eff[b.name].value : eff[b.name].value - eff[a.name].value);
+  const groups = [];
+  sorted.forEach(m => {
+    const g = groups[groups.length - 1];
+    if (g && g.v === eff[m.name].value) g.names.push(m.name);
+    else groups.push({ v: eff[m.name].value, names: [m.name] });
+  });
+  const correctText = (mods.trickRoom ? "Trick Room reverses it: " : "") + groups
+    .map(g => `${g.names.join(" / ")} (${g.v}${g.names.length > 1 ? ", tie" : ""})`)
+    .join(" → ");
+
+  const sideLabel = (text, side) => (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8, marginBottom: 6,
+      fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: ".16em",
+      textTransform: "uppercase", color: "rgba(255,255,255,.4)",
+    }}>
+      {text}
+      {mods.tailwindSide === side && (
+        <span style={{
+          color: "#7AC74C", border: "1px solid #7AC74C", borderRadius: 999,
+          padding: "1px 8px", letterSpacing: ".08em",
+        }}>🍃 Tailwind</span>
+      )}
+    </div>
+  );
+
+  const fieldCard = (mon) => {
+    const pos = order.indexOf(mon.name);
+    const e = eff[mon.name];
+    const chips = [];
+    if (mods.scarf.includes(mon.name)) chips.push(<ModChip key="s" text="Choice Scarf" bg="#E8913A" />);
+    if (mods.para.includes(mon.name)) chips.push(<ModChip key="p" text="PAR" bg="#F7D02C" fg="#5A4A00" />);
+    const wAb = boostAbility(mon, mods.weather);
+    if (wAb) chips.push(<ModChip key="w" text={wAb} bg={WEATHER_META[mods.weather].color} />);
+    const nat = mods.natures && mods.natures[mon.name];
+    if (nat) {
+      const m = natureSpeedMult(nat);
+      chips.push(<ModChip key="n" text={nat}
+        bg={m > 1 ? "#30A46C" : m < 1 ? "#6F35FC" : "#8A8DA8"} />);
+    }
+    const border = !answered
+      ? (pos !== -1 ? "var(--gold)" : "rgba(255,255,255,.14)")
+      : wasRight ? "#30A46C" : "#E5484D";
+    return (
+      <button
+        key={mon.name}
+        onClick={() => tap(mon.name)}
+        disabled={answered}
+        style={{
+          position: "relative", minWidth: 0, cursor: answered ? "default" : "pointer",
+          background: "#F5F6FA", borderRadius: 14, padding: "12px 6px 10px",
+          border: `2.5px solid ${border}`,
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+          color: "#22243E", boxShadow: "0 6px 18px rgba(0,0,0,.4)",
+          transition: "border-color .15s",
+        }}
+      >
+        {pos !== -1 && (
+          <span style={{
+            position: "absolute", top: -10, right: -6, width: 26, height: 26,
+            borderRadius: "50%", background: "var(--gold)", color: "#1B1D36",
+            fontFamily: "var(--display)", fontWeight: 800, fontSize: 16,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 6px rgba(0,0,0,.4)",
+          }}>{pos + 1}</span>
+        )}
+        <MonSprite mon={mon} size={64} />
+        <div style={{
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 15, lineHeight: 1.05,
+          textTransform: "uppercase", textAlign: "center", overflowWrap: "anywhere",
+        }}>{mon.name}</div>
+        {chips.length > 0 && (
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center" }}>{chips}</div>
+        )}
+        <div style={{ minHeight: 34, display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <span style={{
+            fontFamily: "var(--display)", fontWeight: 800, fontSize: 22, lineHeight: 1,
+            color: answered ? "#22243E" : "transparent",
+          }}>{answered ? e.value : "?"}</span>
+          {answered && e.breakdown && (
+            <span style={{ fontFamily: "var(--mono)", fontSize: 9.5, color: "#8A8DA8", marginTop: 2 }}>
+              {e.breakdown}
+            </span>
+          )}
+        </div>
+      </button>
+    );
+  };
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "18px 18px 40px" }}>
+      {/* top bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <button onClick={onQuit} style={{
+          background: "transparent", border: "none", color: "var(--muted)",
+          fontSize: 13, cursor: "pointer", padding: 4,
+        }}>← End</button>
+        <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,.1)", borderRadius: 999 }}>
+          <div style={{
+            width: `${(wins / target) * 100}%`, height: "100%",
+            background: "var(--gold)", borderRadius: 999, transition: "width .25s",
+          }} />
+        </div>
+        <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--muted)" }}>
+          {wins}/{target} wins
+        </span>
+      </div>
+      <div style={{
+        display: "flex", justifyContent: "flex-end", marginBottom: 10,
+        fontFamily: "var(--mono)", fontSize: 12, color: streak >= 3 ? "var(--gold)" : "var(--muted)",
+      }}>
+        {streak > 0 ? `🔥 ${streak} streak` : " "}
+      </div>
+
+      <div style={{
+        textAlign: "center", fontFamily: "var(--mono)", fontSize: 12,
+        letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)",
+        marginBottom: 10,
+      }}>{hard ? "Tap all four in the order they move" : "Tap all four in move order — fastest first"}</div>
+
+      {/* field conditions */}
+      {(mods.weather || mods.trickRoom) && (
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 12 }}>
+          {mods.weather && (
+            <span style={{
+              background: WEATHER_META[mods.weather].color, color: "#fff", borderRadius: 999,
+              padding: "5px 14px", fontSize: 13, fontWeight: 800, letterSpacing: ".04em",
+              textShadow: "0 1px 2px rgba(0,0,0,.3)",
+            }}>
+              {WEATHER_META[mods.weather].icon} {WEATHER_META[mods.weather].label}
+              {mods.weatherSetBy && (
+                <span style={{ fontWeight: 600, fontSize: 11.5, opacity: .92 }}>
+                  {" "}· {mods.weatherSetBy.name}'s {mods.weatherSetBy.ability}
+                </span>
+              )}
+            </span>
+          )}
+          {mods.trickRoom && (
+            <span style={{
+              background: "#735797", color: "#fff", borderRadius: 999,
+              padding: "5px 14px", fontSize: 13, fontWeight: 800, letterSpacing: ".08em",
+              textTransform: "uppercase", textShadow: "0 1px 2px rgba(0,0,0,.3)",
+              boxShadow: "0 0 14px rgba(115,87,151,.7)",
+            }}>🔮 Trick Room</span>
+          )}
+        </div>
+      )}
+
+      {/* the field */}
+      {sideLabel("Their side", 0)}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+        {mons.slice(0, 2).map(fieldCard)}
+      </div>
+      {sideLabel("Your side", 1)}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        {mons.slice(2, 4).map(fieldCard)}
+      </div>
+
+      {/* status / result */}
+      <div style={{ marginTop: 14 }}>
+        {!answered ? (
+          <div style={{
+            textAlign: "center", color: "var(--muted)", fontSize: 13, minHeight: 20,
+          }}>
+            {order.length === 0
+              ? (mods.trickRoom ? "Careful — Trick Room is up…" : "Tap the first Pokémon to move")
+              : `${order.length}/4 picked — tap a numbered pick to undo`}
+          </div>
+        ) : (
+          <>
+            <div style={{
+              borderRadius: 12, padding: "12px 14px", marginBottom: 10,
+              background: wasRight ? "rgba(48,164,108,.15)" : "rgba(229,72,77,.15)",
+              border: `1.5px solid ${wasRight ? "#30A46C" : "#E5484D"}`,
+              color: "#fff", fontSize: 14, lineHeight: 1.6, textAlign: "center",
+            }}>
+              <b>{wasRight ? "Correct!" : "Not quite."}</b>
+              <br />
+              <span style={{ fontSize: 13.5 }}>{correctText}</span>
+            </div>
+            <button onClick={nextRound} style={{
+              width: "100%", padding: "14px", borderRadius: 12, border: "none",
+              background: "var(--gold)", color: "#1B1D36", cursor: "pointer",
+              fontFamily: "var(--display)", fontWeight: 800, fontSize: 20,
+              textTransform: "uppercase", letterSpacing: ".05em",
+              boxShadow: "0 4px 18px rgba(255,203,5,.35)",
+            }}>
+              {wasRight && wins >= target ? "Finish 🏆" : "Next field →"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DuelSummary({ result, onRestart, onAgain }) {
+  const { target, attempts, bestStreak } = result;
+  const acc = Math.round((target / attempts) * 100);
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "40px 18px" }}>
+      <div style={{
+        fontFamily: "var(--mono)", fontSize: 12, letterSpacing: ".14em",
+        textTransform: "uppercase", color: "var(--gold)", marginBottom: 8,
+      }}>Speed game complete 🏆</div>
+      <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 72, color: "#fff", lineHeight: 1 }}>
+        {target}<span style={{ fontSize: 30, color: "var(--muted)" }}> wins</span>
+      </div>
+      <p style={{ color: "var(--muted)", fontSize: 15, margin: "10px 0 24px", lineHeight: 1.7 }}>
+        {attempts} rounds · {acc}% accuracy · best streak {bestStreak} 🔥
+      </p>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={onAgain} style={{
+          flex: 1, padding: "14px", borderRadius: 12, border: "none",
+          background: "var(--gold)", color: "#1B1D36", cursor: "pointer",
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 18,
+          textTransform: "uppercase", letterSpacing: ".05em",
+        }}>Run it back</button>
+        <button onClick={onRestart} style={{
+          flex: 1, padding: "14px", borderRadius: 12,
+          border: "1.5px solid rgba(255,255,255,.25)", background: "transparent",
+          color: "#fff", cursor: "pointer", fontFamily: "var(--display)",
+          fontWeight: 800, fontSize: 18, textTransform: "uppercase", letterSpacing: ".05em",
+        }}>New session</button>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- summary ----------------------------- */
+
+function SummaryScreen({ session, onRestart, onDrillToughest }) {
+  const { done, log, total } = session;
+  const reviews = log.again + log.hard + log.good + log.easy;
+  const tough = done.filter(d => d.lapses > 0).sort((a, b) => b.lapses - a.lapses);
+  const firstTry = done.filter(d => d.lapses === 0 && d.reviews <= SRS.GRADUATE_STEPS).length;
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "40px 18px" }}>
+      <div style={{
+        fontFamily: "var(--mono)", fontSize: 12, letterSpacing: ".14em",
+        textTransform: "uppercase", color: "var(--gold)", marginBottom: 8,
+      }}>Session complete — all cards cleared</div>
+      <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 72, color: "#fff", lineHeight: 1 }}>
+        {reviews}<span style={{ fontSize: 30, color: "var(--muted)" }}> reviews</span>
+      </div>
+      <p style={{ color: "var(--muted)", fontSize: 15, margin: "10px 0 24px", lineHeight: 1.6 }}>
+        {total} cards learned · {firstTry} cleared without a miss.
+        <br />
+        <span style={{ fontFamily: "var(--mono)", fontSize: 13 }}>
+          <span style={{ color: "#E5484D" }}>{log.again} again</span> ·{" "}
+          <span style={{ color: "#E8913A" }}>{log.hard} hard</span> ·{" "}
+          <span style={{ color: "#6FCF97" }}>{log.good} good</span> ·{" "}
+          <span style={{ color: "#7FB0F0" }}>{log.easy} easy</span>
+        </span>
+      </p>
+
+      {tough.length > 0 && (
+        <div style={{ ...panelStyle }}>
+          <div style={panelHeadStyle}><span>Toughest cards</span></div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {tough.slice(0, 10).map((d, idx) => (
+              <div key={idx} style={{ display: "flex", alignItems: "center", gap: 10, color: "#fff", fontSize: 14 }}>
+                {d.card.mon
+                  ? <TypeOrb types={monTypes(d.card.mon)} size={24} text={d.card.mon.name[0]} />
+                  : <NatureOrb nature={d.card.nature} size={24} />}
+                <span style={{ fontWeight: 600 }}>{d.card.mon ? d.card.mon.name : d.card.nature.name}</span>
+                <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                  {d.card.cat === "stats"
+                    ? STAT_LABEL[d.card.statKey]
+                    : d.card.cat === "natureChart" ? "nature" : d.card.cat}
+                </span>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "#E5484D", marginLeft: "auto" }}>
+                  ×{d.lapses} again
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+        {tough.length > 0 && (
+          <button onClick={() => onDrillToughest(tough)} style={{
+            flex: 1, padding: "14px", borderRadius: 12, border: "none",
+            background: "var(--gold)", color: "#1B1D36", cursor: "pointer",
+            fontFamily: "var(--display)", fontWeight: 800, fontSize: 18,
+            textTransform: "uppercase", letterSpacing: ".05em",
+          }}>Drill toughest</button>
+        )}
+        <button onClick={onRestart} style={{
+          flex: 1, padding: "14px", borderRadius: 12,
+          border: "1.5px solid rgba(255,255,255,.25)", background: "transparent",
+          color: "#fff", cursor: "pointer", fontFamily: "var(--display)",
+          fontWeight: 800, fontSize: 18, textTransform: "uppercase", letterSpacing: ".05em",
+        }}>New session</button>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- app ----------------------------- */
+
+function App() {
+  const [data, setData] = useState(FALLBACK);
+  const [live, setLive] = useState(false);
+  const [screen, setScreen] = useState("config");
+  const [session, setSession] = useState(null); // { mode, reg, deckCfg, duelCfg }
+  const [queue, setQueue] = useState([]);
+  const [result, setResult] = useState(null);
+  const [sessionId, setSessionId] = useState(0);
+
+  useEffect(() => {
+    fetch("data.json")
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(d => { if (d && d.formats && d.formats.length) { setData(d); setLive(true); } })
+      .catch(() => {});
+  }, []);
+
+  const pool = useMemo(
+    () => (session ? session.deckCfg.mons.slice(0, session.deckCfg.count) : []),
+    [session]
+  );
+  const duelPool = useMemo(() => pool.filter(m => m.stats), [pool]);
+
+  const start = (cfg) => {
+    setSession(cfg);
+    setResult(null);
+    setSessionId(s => s + 1);
+    if (cfg.mode === "flash") {
+      setQueue(buildDeck(cfg.deckCfg));
+      setScreen("quiz");
+    } else {
+      setScreen("duel");
+    }
+  };
+
+  const drillToughest = (tough) => {
+    setQueue(shuffle(tough.map(t => ({ ...t, step: 0, lapses: 0, reviews: 0 }))));
+    setResult(null);
+    setSessionId(s => s + 1);
+    setScreen("quiz");
+  };
+
+  const duelAgain = () => {
+    setResult(null);
+    setSessionId(s => s + 1);
+    setScreen("duel");
+  };
+
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "radial-gradient(1200px 600px at 50% -10%, #262A52 0%, #16182E 55%, #101124 100%)",
+      fontFamily: "var(--body)",
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap');
+        :root {
+          --display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+          --body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+          --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+          --gold: #FFCB05;
+          --muted: rgba(255,255,255,.55);
+        }
+        button:focus-visible, [role="button"]:focus-visible {
+          outline: 2px solid #FFCB05; outline-offset: 2px;
+        }
+        input[type="range"] { height: 22px; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+      `}</style>
+
+      {screen === "config" && (
+        <ConfigScreen
+          formats={data.formats}
+          generated={data.generated}
+          live={live}
+          onStart={start}
+        />
+      )}
+      {screen === "quiz" && session && (
+        <QuizScreen
+          key={sessionId}
+          initialQueue={queue}
+          pool={pool}
+          reg={session.reg}
+          onQuit={() => setScreen("config")}
+          onDone={(res) => { setResult(res); setScreen("done"); }}
+        />
+      )}
+      {screen === "duel" && session && (
+        session.duelCfg.variant === "order" ? (
+          <TurnOrderScreen
+            key={sessionId}
+            pool={duelPool}
+            target={session.duelCfg.target}
+            hard={session.duelCfg.hard}
+            natures={session.duelCfg.natures}
+            onQuit={() => setScreen("config")}
+            onDone={(res) => { setResult(res); setScreen("duelDone"); }}
+          />
+        ) : (
+          <DuelScreen
+            key={sessionId}
+            pool={duelPool}
+            target={session.duelCfg.target}
+            onQuit={() => setScreen("config")}
+            onDone={(res) => { setResult(res); setScreen("duelDone"); }}
+          />
+        )
+      )}
+      {screen === "done" && result && (
+        <SummaryScreen
+          session={result}
+          onRestart={() => setScreen("config")}
+          onDrillToughest={drillToughest}
+        />
+      )}
+      {screen === "duelDone" && result && (
+        <DuelSummary
+          result={result}
+          onRestart={() => setScreen("config")}
+          onAgain={duelAgain}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
