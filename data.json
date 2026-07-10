@@ -1,16 +1,16 @@
 {
  "generated": "2026-07-09",
- "note": "Snapshot from Pikalytics. Refreshed nightly by GitHub Action once deployed. Percentages appear after the first automated pull.",
+ "note": "Snapshot from Pikalytics. Refreshed nightly by GitHub Action once deployed. Percentages and Reg M-A appear after the first automated pull.",
  "formats": [
   {
-   "id": "champions-regmb",
+   "id": "champions-current",
    "game": "Pokémon Champions",
    "label": "Reg M-B (current)",
    "slug": "champions",
    "hasNatures": true,
    "hasWinrate": true,
    "source": "Pikalytics ranked battle data · Champions Reg M-B S3",
-   "noteText": "Stats shown are base-form values — Megas change stats in battle. Champions nature data arrives with the first nightly pull.",
+   "noteText": "Stats shown are base-form values — Megas change stats in battle.",
    "mons": [
     {
      "rank": 1,
@@ -46,6 +46,25 @@
      "abilities": [
       "Rough Skin",
       "Sand Veil"
+     ],
+     "megas": [
+      {
+       "name": "Mega Garchomp",
+       "slug": "garchomp-mega",
+       "types": [
+        "dragon",
+        "ground"
+       ],
+       "stats": {
+        "hp": 108,
+        "atk": 170,
+        "def": 115,
+        "spa": 120,
+        "spd": 95,
+        "spe": 92
+       },
+       "ability": "Sand Force"
+      }
      ]
     },
     {
@@ -299,6 +318,42 @@
      "abilities": [
       "Blaze",
       "Solar Power"
+     ],
+     "megas": [
+      {
+       "name": "Mega Charizard X",
+       "slug": "charizard-mega-x",
+       "types": [
+        "fire",
+        "dragon"
+       ],
+       "stats": {
+        "hp": 78,
+        "atk": 130,
+        "def": 111,
+        "spa": 130,
+        "spd": 85,
+        "spe": 100
+       },
+       "ability": "Tough Claws"
+      },
+      {
+       "name": "Mega Charizard Y",
+       "slug": "charizard-mega-y",
+       "types": [
+        "fire",
+        "flying"
+       ],
+       "stats": {
+        "hp": 78,
+        "atk": 104,
+        "def": 78,
+        "spa": 159,
+        "spd": 115,
+        "spe": 100
+       },
+       "ability": "Drought"
+      }
      ]
     },
     {
@@ -552,6 +607,25 @@
      "abilities": [
       "Torrent",
       "Damp"
+     ],
+     "megas": [
+      {
+       "name": "Mega Swampert",
+       "slug": "swampert-mega",
+       "types": [
+        "water",
+        "ground"
+       ],
+       "stats": {
+        "hp": 100,
+        "atk": 150,
+        "def": 110,
+        "spa": 95,
+        "spd": 110,
+        "spe": 70
+       },
+       "ability": "Swift Swim"
+      }
      ]
     },
     {
@@ -588,6 +662,25 @@
      "abilities": [
       "Clear Body",
       "Light Metal"
+     ],
+     "megas": [
+      {
+       "name": "Mega Metagross",
+       "slug": "metagross-mega",
+       "types": [
+        "steel",
+        "psychic"
+       ],
+       "stats": {
+        "hp": 80,
+        "atk": 145,
+        "def": 150,
+        "spa": 105,
+        "spd": 110,
+        "spe": 110
+       },
+       "ability": "Tough Claws"
+      }
      ]
     },
     {
@@ -731,6 +824,25 @@
       "Unnerve",
       "Pressure",
       "Rock Head"
+     ],
+     "megas": [
+      {
+       "name": "Mega Aerodactyl",
+       "slug": "aerodactyl-mega",
+       "types": [
+        "rock",
+        "flying"
+       ],
+       "stats": {
+        "hp": 80,
+        "atk": 135,
+        "def": 85,
+        "spa": 70,
+        "spd": 95,
+        "spe": 150
+       },
+       "ability": "Tough Claws"
+      }
      ]
     },
     {
@@ -840,6 +952,25 @@
      "abilities": [
       "Prankster",
       "Stall"
+     ],
+     "megas": [
+      {
+       "name": "Mega Sableye",
+       "slug": "sableye-mega",
+       "types": [
+        "dark",
+        "ghost"
+       ],
+       "stats": {
+        "hp": 50,
+        "atk": 85,
+        "def": 125,
+        "spa": 85,
+        "spd": 115,
+        "spe": 20
+       },
+       "ability": "Magic Bounce"
+      }
      ]
     },
     {
@@ -873,6 +1004,25 @@
       "Intimidate",
       "Hyper Cutter",
       "Sheer Force"
+     ],
+     "megas": [
+      {
+       "name": "Mega Mawile",
+       "slug": "mawile-mega",
+       "types": [
+        "steel",
+        "fairy"
+       ],
+       "stats": {
+        "hp": 50,
+        "atk": 105,
+        "def": 125,
+        "spa": 55,
+        "spd": 95,
+        "spe": 50
+       },
+       "ability": "Huge Power"
+      }
      ]
     },
     {
@@ -909,995 +1059,6 @@
      "abilities": [
       "Snow Warning",
       "Snow Cloak"
-     ]
-    }
-   ]
-  },
-  {
-   "id": "sv-regi",
-   "game": "Scarlet & Violet",
-   "label": "Reg I (current)",
-   "slug": "homebsd",
-   "hasNatures": true,
-   "hasWinrate": false,
-   "source": "Pikalytics ranked ladder · VGC 2026 Regulation Set I",
-   "noteText": null,
-   "mons": [
-    {
-     "rank": 1,
-     "name": "Incineroar",
-     "types": [
-      "fire",
-      "dark"
-     ],
-     "stats": {
-      "hp": 95,
-      "atk": 115,
-      "def": 90,
-      "spa": 80,
-      "spd": 90,
-      "spe": 60
-     },
-     "moves": [
-      "Fake Out",
-      "Knock Off",
-      "Flare Blitz",
-      "Parting Shot",
-      "U-turn",
-      "Will-O-Wisp"
-     ],
-     "items": [
-      "Assault Vest",
-      "Rocky Helmet",
-      "Safety Goggles",
-      "Sitrus Berry",
-      "Chople Berry"
-     ],
-     "natures": [
-      "Impish",
-      "Careful",
-      "Adamant",
-      "Relaxed"
-     ],
-     "abilities": [
-      "Intimidate"
-     ]
-    },
-    {
-     "rank": 2,
-     "name": "Calyrex-Shadow",
-     "types": [
-      "psychic",
-      "ghost"
-     ],
-     "stats": {
-      "hp": 100,
-      "atk": 85,
-      "def": 80,
-      "spa": 165,
-      "spd": 100,
-      "spe": 150
-     },
-     "moves": [
-      "Astral Barrage",
-      "Protect",
-      "Psychic",
-      "Encore",
-      "Nasty Plot",
-      "Pollen Puff"
-     ],
-     "items": [
-      "Focus Sash",
-      "Life Orb",
-      "Choice Specs",
-      "Choice Scarf",
-      "Covert Cloak"
-     ],
-     "natures": [
-      "Timid",
-      "Modest",
-      "Quiet"
-     ],
-     "abilities": [
-      "As One"
-     ]
-    },
-    {
-     "rank": 3,
-     "name": "Miraidon",
-     "types": [
-      "electric",
-      "dragon"
-     ],
-     "stats": {
-      "hp": 100,
-      "atk": 85,
-      "def": 100,
-      "spa": 135,
-      "spd": 115,
-      "spe": 135
-     },
-     "moves": [
-      "Electro Drift",
-      "Volt Switch",
-      "Draco Meteor",
-      "Dazzling Gleam",
-      "Snarl",
-      "Protect"
-     ],
-     "items": [
-      "Choice Specs",
-      "Choice Scarf",
-      "Life Orb",
-      "Assault Vest",
-      "Covert Cloak"
-     ],
-     "natures": [
-      "Modest",
-      "Timid"
-     ],
-     "abilities": [
-      "Hadron Engine"
-     ]
-    },
-    {
-     "rank": 4,
-     "name": "Rillaboom",
-     "types": [
-      "grass"
-     ],
-     "stats": {
-      "hp": 100,
-      "atk": 125,
-      "def": 90,
-      "spa": 60,
-      "spd": 70,
-      "spe": 85
-     },
-     "moves": [
-      "Fake Out",
-      "Grassy Glide",
-      "Wood Hammer",
-      "U-turn",
-      "High Horsepower",
-      "Knock Off"
-     ],
-     "items": [
-      "Assault Vest",
-      "Miracle Seed",
-      "Life Orb",
-      "Meadow Plate",
-      "Clear Amulet"
-     ],
-     "natures": [
-      "Adamant",
-      "Jolly",
-      "Impish",
-      "Careful"
-     ],
-     "abilities": [
-      "Grassy Surge",
-      "Overgrow"
-     ]
-    },
-    {
-     "rank": 5,
-     "name": "Urshifu-Rapid-Strike",
-     "types": [
-      "fighting",
-      "water"
-     ],
-     "stats": {
-      "hp": 100,
-      "atk": 130,
-      "def": 100,
-      "spa": 63,
-      "spd": 60,
-      "spe": 97
-     },
-     "moves": [
-      "Surging Strikes",
-      "Close Combat",
-      "Aqua Jet",
-      "U-turn",
-      "Detect",
-      "Taunt"
-     ],
-     "items": [
-      "Choice Scarf",
-      "Choice Band",
-      "Focus Sash",
-      "Mystic Water",
-      "Covert Cloak"
-     ],
-     "natures": [
-      "Adamant",
-      "Jolly",
-      "Brave"
-     ],
-     "abilities": [
-      "Unseen Fist"
-     ]
-    },
-    {
-     "rank": 6,
-     "name": "Calyrex-Ice",
-     "types": [
-      "psychic",
-      "ice"
-     ],
-     "stats": {
-      "hp": 100,
-      "atk": 165,
-      "def": 150,
-      "spa": 85,
-      "spd": 130,
-      "spe": 50
-     },
-     "moves": [
-      "Glacial Lance",
-      "Trick Room",
-      "Protect",
-      "High Horsepower",
-      "Leech Seed",
-      "Seed Bomb"
-     ],
-     "items": [
-      "Clear Amulet",
-      "Leftovers",
-      "Assault Vest",
-      "Never-Melt Ice",
-      "Loaded Dice"
-     ],
-     "natures": [
-      "Adamant",
-      "Brave",
-      "Jolly",
-      "Impish"
-     ],
-     "abilities": [
-      "As One"
-     ]
-    },
-    {
-     "rank": 7,
-     "name": "Zamazenta",
-     "types": [
-      "fighting"
-     ],
-     "stats": {
-      "hp": 92,
-      "atk": 120,
-      "def": 115,
-      "spa": 80,
-      "spd": 115,
-      "spe": 138
-     },
-     "moves": [
-      "Body Press",
-      "Wide Guard",
-      "Protect",
-      "Heavy Slam",
-      "Iron Head",
-      "Iron Defense"
-     ],
-     "items": [
-      "Rusted Shield",
-      "Electric Seed"
-     ],
-     "natures": [
-      "Impish",
-      "Jolly",
-      "Careful",
-      "Adamant"
-     ],
-     "abilities": [
-      "Dauntless Shield"
-     ]
-    },
-    {
-     "rank": 8,
-     "name": "Whimsicott",
-     "types": [
-      "grass",
-      "fairy"
-     ],
-     "stats": {
-      "hp": 60,
-      "atk": 67,
-      "def": 85,
-      "spa": 77,
-      "spd": 75,
-      "spe": 116
-     },
-     "moves": [
-      "Tailwind",
-      "Moonblast",
-      "Encore",
-      "Light Screen",
-      "Taunt",
-      "Helping Hand"
-     ],
-     "items": [
-      "Focus Sash",
-      "Covert Cloak",
-      "Mental Herb",
-      "Rocky Helmet",
-      "Ring Target"
-     ],
-     "natures": [
-      "Timid",
-      "Calm",
-      "Bold"
-     ],
-     "abilities": [
-      "Prankster"
-     ]
-    },
-    {
-     "rank": 9,
-     "name": "Chien-Pao",
-     "types": [
-      "dark",
-      "ice"
-     ],
-     "stats": {
-      "hp": 80,
-      "atk": 120,
-      "def": 80,
-      "spa": 90,
-      "spd": 65,
-      "spe": 135
-     },
-     "moves": [
-      "Sucker Punch",
-      "Ice Spinner",
-      "Protect",
-      "Ruination",
-      "Ice Shard",
-      "Icicle Crash"
-     ],
-     "items": [
-      "Focus Sash",
-      "Covert Cloak",
-      "Assault Vest",
-      "Life Orb",
-      "Choice Scarf"
-     ],
-     "natures": [
-      "Jolly",
-      "Adamant"
-     ],
-     "abilities": [
-      "Sword of Ruin"
-     ]
-    },
-    {
-     "rank": 10,
-     "name": "Tornadus",
-     "types": [
-      "flying"
-     ],
-     "stats": {
-      "hp": 79,
-      "atk": 115,
-      "def": 70,
-      "spa": 125,
-      "spd": 80,
-      "spe": 111
-     },
-     "moves": [
-      "Tailwind",
-      "Bleakwind Storm",
-      "Taunt",
-      "Rain Dance",
-      "Protect",
-      "Sunny Day"
-     ],
-     "items": [
-      "Covert Cloak",
-      "Sharp Beak",
-      "Focus Sash",
-      "Mental Herb",
-      "Rocky Helmet"
-     ],
-     "natures": [
-      "Modest",
-      "Timid",
-      "Bold"
-     ],
-     "abilities": [
-      "Prankster",
-      "Defiant"
-     ]
-    },
-    {
-     "rank": 11,
-     "name": "Koraidon",
-     "types": [
-      "fighting",
-      "dragon"
-     ],
-     "stats": {
-      "hp": 100,
-      "atk": 135,
-      "def": 115,
-      "spa": 85,
-      "spd": 100,
-      "spe": 135
-     },
-     "moves": [
-      "Flare Blitz",
-      "Protect",
-      "Collision Course",
-      "Flame Charge",
-      "U-turn",
-      "Breaking Swipe"
-     ],
-     "items": [
-      "Clear Amulet",
-      "Choice Scarf",
-      "Life Orb",
-      "Loaded Dice",
-      "Assault Vest"
-     ],
-     "natures": [
-      "Adamant",
-      "Jolly"
-     ],
-     "abilities": [
-      "Orichalcum Pulse"
-     ]
-    },
-    {
-     "rank": 12,
-     "name": "Kyogre",
-     "types": [
-      "water"
-     ],
-     "stats": {
-      "hp": 100,
-      "atk": 100,
-      "def": 90,
-      "spa": 150,
-      "spd": 140,
-      "spe": 90
-     },
-     "moves": [
-      "Water Spout",
-      "Origin Pulse",
-      "Thunder",
-      "Ice Beam",
-      "Hydro Pump",
-      "Protect"
-     ],
-     "items": [
-      "Assault Vest",
-      "Mystic Water",
-      "Choice Scarf",
-      "Choice Specs",
-      "Covert Cloak"
-     ],
-     "natures": [
-      "Modest",
-      "Timid",
-      "Quiet"
-     ],
-     "abilities": [
-      "Drizzle"
-     ]
-    },
-    {
-     "rank": 13,
-     "name": "Raging Bolt",
-     "types": [
-      "electric",
-      "dragon"
-     ],
-     "stats": {
-      "hp": 125,
-      "atk": 73,
-      "def": 91,
-      "spa": 137,
-      "spd": 89,
-      "spe": 75
-     },
-     "moves": [
-      "Thunderclap",
-      "Thunderbolt",
-      "Protect",
-      "Dragon Pulse",
-      "Draco Meteor",
-      "Volt Switch"
-     ],
-     "items": [
-      "Booster Energy",
-      "Assault Vest",
-      "Life Orb",
-      "Magnet",
-      "Choice Specs"
-     ],
-     "natures": [
-      "Modest",
-      "Quiet"
-     ],
-     "abilities": [
-      "Protosynthesis"
-     ]
-    },
-    {
-     "rank": 14,
-     "name": "Flutter Mane",
-     "types": [
-      "ghost",
-      "fairy"
-     ],
-     "stats": {
-      "hp": 55,
-      "atk": 55,
-      "def": 55,
-      "spa": 135,
-      "spd": 135,
-      "spe": 135
-     },
-     "moves": [
-      "Moonblast",
-      "Icy Wind",
-      "Shadow Ball",
-      "Protect",
-      "Taunt",
-      "Dazzling Gleam"
-     ],
-     "items": [
-      "Focus Sash",
-      "Booster Energy",
-      "Choice Specs",
-      "Fairy Feather",
-      "Life Orb"
-     ],
-     "natures": [
-      "Timid",
-      "Modest",
-      "Bold"
-     ],
-     "abilities": [
-      "Protosynthesis"
-     ]
-    },
-    {
-     "rank": 15,
-     "name": "Lunala",
-     "types": [
-      "psychic",
-      "ghost"
-     ],
-     "stats": {
-      "hp": 137,
-      "atk": 113,
-      "def": 89,
-      "spa": 137,
-      "spd": 107,
-      "spe": 97
-     },
-     "moves": [
-      "Moongeist Beam",
-      "Wide Guard",
-      "Trick Room",
-      "Meteor Beam",
-      "Moonblast",
-      "Expanding Force"
-     ],
-     "items": [
-      "Power Herb",
-      "Electric Seed",
-      "Leftovers",
-      "Mental Herb",
-      "Expert Belt"
-     ],
-     "natures": [
-      "Modest",
-      "Quiet",
-      "Timid"
-     ],
-     "abilities": [
-      "Shadow Shield"
-     ]
-    },
-    {
-     "rank": 16,
-     "name": "Ogerpon",
-     "types": [
-      "grass"
-     ],
-     "stats": {
-      "hp": 80,
-      "atk": 120,
-      "def": 84,
-      "spa": 60,
-      "spd": 96,
-      "spe": 110
-     },
-     "moves": [
-      "Ivy Cudgel",
-      "Spiky Shield",
-      "Follow Me",
-      "Horn Leech",
-      "Wood Hammer",
-      "Grassy Glide"
-     ],
-     "items": [
-      "Cornerstone Mask",
-      "Wellspring Mask",
-      "Hearthflame Mask",
-      "Focus Sash",
-      "Leftovers"
-     ],
-     "natures": [
-      "Adamant",
-      "Jolly",
-      "Impish"
-     ],
-     "abilities": [
-      "Sturdy (Cornerstone)",
-      "Water Absorb (Wellspring)",
-      "Mold Breaker (Hearthflame)"
-     ]
-    },
-    {
-     "rank": 17,
-     "name": "Indeedee-F",
-     "types": [
-      "psychic",
-      "normal"
-     ],
-     "stats": {
-      "hp": 70,
-      "atk": 55,
-      "def": 65,
-      "spa": 95,
-      "spd": 105,
-      "spe": 85
-     },
-     "moves": [
-      "Follow Me",
-      "Helping Hand",
-      "Trick Room",
-      "Psychic",
-      "Dazzling Gleam",
-      "Imprison"
-     ],
-     "items": [
-      "Psychic Seed",
-      "Rocky Helmet",
-      "Eject Button",
-      "Safety Goggles",
-      "Focus Sash"
-     ],
-     "natures": [
-      "Bold",
-      "Relaxed",
-      "Sassy",
-      "Calm"
-     ],
-     "abilities": [
-      "Psychic Surge",
-      "Own Tempo"
-     ]
-    },
-    {
-     "rank": 18,
-     "name": "Grimmsnarl",
-     "types": [
-      "dark",
-      "fairy"
-     ],
-     "stats": {
-      "hp": 95,
-      "atk": 120,
-      "def": 65,
-      "spa": 95,
-      "spd": 75,
-      "spe": 60
-     },
-     "moves": [
-      "Light Screen",
-      "Reflect",
-      "Spirit Break",
-      "Thunder Wave",
-      "Fake Out",
-      "Foul Play"
-     ],
-     "items": [
-      "Light Clay",
-      "Covert Cloak",
-      "Lagging Tail",
-      "Rocky Helmet",
-      "Wide Lens"
-     ],
-     "natures": [
-      "Careful",
-      "Impish",
-      "Adamant",
-      "Calm"
-     ],
-     "abilities": [
-      "Prankster"
-     ]
-    },
-    {
-     "rank": 19,
-     "name": "Amoonguss",
-     "types": [
-      "grass",
-      "poison"
-     ],
-     "stats": {
-      "hp": 114,
-      "atk": 85,
-      "def": 70,
-      "spa": 85,
-      "spd": 80,
-      "spe": 30
-     },
-     "moves": [
-      "Rage Powder",
-      "Spore",
-      "Protect",
-      "Pollen Puff",
-      "Sludge Bomb",
-      "Clear Smog"
-     ],
-     "items": [
-      "Rocky Helmet",
-      "Mental Herb",
-      "Sitrus Berry",
-      "Covert Cloak",
-      "Leftovers"
-     ],
-     "natures": [
-      "Relaxed",
-      "Bold",
-      "Sassy",
-      "Calm"
-     ],
-     "abilities": [
-      "Regenerator",
-      "Effect Spore"
-     ]
-    },
-    {
-     "rank": 20,
-     "name": "Landorus",
-     "types": [
-      "ground",
-      "flying"
-     ],
-     "stats": {
-      "hp": 89,
-      "atk": 125,
-      "def": 90,
-      "spa": 115,
-      "spd": 80,
-      "spe": 101
-     },
-     "moves": [
-      "Earth Power",
-      "Sludge Bomb",
-      "Sandsear Storm",
-      "Protect",
-      "Taunt",
-      "U-turn"
-     ],
-     "items": [
-      "Life Orb",
-      "Choice Scarf",
-      "Assault Vest",
-      "Focus Sash",
-      "Choice Specs"
-     ],
-     "natures": [
-      "Modest",
-      "Timid"
-     ],
-     "abilities": [
-      "Sheer Force",
-      "Sand Force"
-     ]
-    },
-    {
-     "rank": 21,
-     "name": "Smeargle",
-     "types": [
-      "normal"
-     ],
-     "stats": {
-      "hp": 55,
-      "atk": 20,
-      "def": 35,
-      "spa": 20,
-      "spd": 45,
-      "spe": 75
-     },
-     "moves": [
-      "Follow Me",
-      "Spore",
-      "Fake Out",
-      "Decorate",
-      "Wide Guard",
-      "Spiky Shield"
-     ],
-     "items": [
-      "Focus Sash",
-      "Eject Pack",
-      "Mental Herb",
-      "Choice Scarf",
-      "Rocky Helmet"
-     ],
-     "natures": [
-      "Jolly",
-      "Timid",
-      "Relaxed"
-     ],
-     "abilities": [
-      "Moody",
-      "Technician",
-      "Own Tempo"
-     ]
-    },
-    {
-     "rank": 22,
-     "name": "Volcarona",
-     "types": [
-      "bug",
-      "fire"
-     ],
-     "stats": {
-      "hp": 85,
-      "atk": 60,
-      "def": 65,
-      "spa": 135,
-      "spd": 105,
-      "spe": 100
-     },
-     "moves": [
-      "Protect",
-      "Rage Powder",
-      "Fiery Dance",
-      "Quiver Dance",
-      "Struggle Bug",
-      "Tailwind"
-     ],
-     "items": [
-      "Electric Seed",
-      "Rocky Helmet",
-      "Leftovers",
-      "Safety Goggles",
-      "Charcoal"
-     ],
-     "natures": [
-      "Bold",
-      "Timid",
-      "Modest",
-      "Calm"
-     ],
-     "abilities": [
-      "Flame Body",
-      "Swarm"
-     ]
-    },
-    {
-     "rank": 23,
-     "name": "Chi-Yu",
-     "types": [
-      "dark",
-      "fire"
-     ],
-     "stats": {
-      "hp": 55,
-      "atk": 80,
-      "def": 80,
-      "spa": 135,
-      "spd": 120,
-      "spe": 100
-     },
-     "moves": [
-      "Heat Wave",
-      "Dark Pulse",
-      "Overheat",
-      "Snarl",
-      "Flamethrower",
-      "Protect"
-     ],
-     "items": [
-      "Choice Scarf",
-      "Choice Specs",
-      "Focus Sash",
-      "Assault Vest",
-      "Covert Cloak"
-     ],
-     "natures": [
-      "Modest",
-      "Timid",
-      "Quiet"
-     ],
-     "abilities": [
-      "Beads of Ruin"
-     ]
-    },
-    {
-     "rank": 24,
-     "name": "Ursaluna",
-     "types": [
-      "ground",
-      "normal"
-     ],
-     "stats": {
-      "hp": 130,
-      "atk": 140,
-      "def": 105,
-      "spa": 45,
-      "spd": 80,
-      "spe": 50
-     },
-     "moves": [
-      "Facade",
-      "Protect",
-      "Headlong Rush",
-      "Earthquake",
-      "Low Kick",
-      "Crunch"
-     ],
-     "items": [
-      "Flame Orb"
-     ],
-     "natures": [
-      "Brave",
-      "Adamant",
-      "Jolly"
-     ],
-     "abilities": [
-      "Guts"
-     ]
-    },
-    {
-     "rank": 25,
-     "name": "Farigiraf",
-     "types": [
-      "normal",
-      "psychic"
-     ],
-     "stats": {
-      "hp": 120,
-      "atk": 90,
-      "def": 70,
-      "spa": 110,
-      "spd": 70,
-      "spe": 60
-     },
-     "moves": [
-      "Trick Room",
-      "Foul Play",
-      "Helping Hand",
-      "Psychic",
-      "Psychic Noise",
-      "Protect"
-     ],
-     "items": [
-      "Electric Seed",
-      "Safety Goggles",
-      "Sitrus Berry",
-      "Mental Herb",
-      "Rocky Helmet"
-     ],
-     "natures": [
-      "Bold",
-      "Relaxed",
-      "Modest",
-      "Impish"
-     ],
-     "abilities": [
-      "Armor Tail",
-      "Sap Sipper"
      ]
     }
    ]
