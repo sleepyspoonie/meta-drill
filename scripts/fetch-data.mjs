@@ -1,19 +1,27 @@
 #!/usr/bin/env node
 /**
- * Nightly Pikalytics snapshot for Meta Drill.
+ * Nightly Pikalytics snapshot for Meta Drill (Pokémon Champions).
  *
- * Pulls each format's ranked list plus per-Pokémon details from
- * Pikalytics' AI-readable endpoints (see https://www.pikalytics.com/llms.txt
- * for the current list of format slugs), and writes data.json.
+ * Endpoints (documented at https://www.pikalytics.com/llms-full.txt):
+ *   GET /ai/pokedex                    -> ranked list, site's current default format
+ *   GET /ai/pokedex/[format]           -> ranked list for a format
+ *   GET /ai/pokedex/[format]/[pokemon] -> per-Pokémon markdown (moves/items/abilities/
+ *                                         natures with %s, base stats, win rate)
  *
- * Resilience rules:
- *  - If anything fails to parse, the script exits non-zero and the old
- *    data.json is left untouched (the GitHub Action simply fails loudly).
- *  - Types/stats/winrate are carried forward from the previous data.json
- *    when a fresh pull doesn't include them.
+ * The "current" format slug rotates with seasons (e.g. battledataregmbs3),
+ * so it is auto-detected from /ai/pokedex on every run.
  *
- * If a regulation rotates, update slug/label below (current slugs are
- * listed at https://www.pikalytics.com/llms.txt).
+ * Mega Evolutions: Pikalytics tracks base forms only, so after each pull
+ * the script checks EVERY ranked Pokémon against PokéAPI for Mega form
+ * varieties and attaches their stats, types, and ability as mon.megas.
+ * (Item lists can't be trusted to reveal stone holders — Pikalytics only
+ * stores each mon's top few items.) Champions-exclusive Megas that
+ * PokéAPI doesn't know yet are skipped with a warning and retried on
+ * the next run. Species lookups are cached within a run.
+ *
+ * Resilience: each format is fetched independently. If one fails, its
+ * previous data.json block is carried forward untouched and the run still
+ * succeeds. The run only fails if NO format could be refreshed.
  */
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -26,16 +34,21 @@ const DELAY_MS = 900; // be polite: ~1 request/second
 
 const FORMATS = [
   {
-    id: "champions-regmb", game: "Pokémon Champions", label: "Reg M-B (current)",
-    slug: "champions", hasNatures: true, hasWinrate: true,
-    source: "Pikalytics ranked battle data · Champions Reg M-B",
+    id: "champions-current", game: "Pokémon Champions", label: "Current regulation",
+    slug: "auto", // resolved from /ai/pokedex at runtime — tracks season rotations
+    hasNatures: true, hasWinrate: true,
+    source: "Pikalytics ranked battle data · Pokémon Champions (current regulation)",
     noteText: "Stats shown are base-form values — Megas change stats in battle.",
   },
   {
-    id: "sv-regi", game: "Scarlet & Violet", label: "Reg I (current)",
-    slug: "homebsd", hasNatures: true, hasWinrate: false,
-    source: "Pikalytics ranked ladder · VGC 2026 Regulation Set I", noteText: null,
+    id: "champions-regma", game: "Pokémon Champions", label: "Reg M-A",
+    slug: "gen9championsvgc2026regma",
+    hasNatures: true, hasWinrate: true,
+    source: "Pikalytics ranked battle data · Champions Reg M-A",
+    noteText: "Stats shown are base-form values — Megas change stats in battle.",
   },
+  // Add more regulations here as they release — current slugs are listed
+  // in the "Supported Formats" table at https://www.pikalytics.com/llms-full.txt
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -48,7 +61,18 @@ async function get(url) {
   return res.text();
 }
 
-/** Parse a ranked usage list: lines like "1. Incineroar (48.2%)" or "1) Incineroar — 48.2%" */
+/** The default-format index links to /ai/pokedex/<slug>/<mon>; extract <slug>. */
+async function resolveCurrentSlug() {
+  const md = await get(`${BASE}/ai/pokedex`);
+  const counts = {};
+  for (const m of md.matchAll(/\/ai\/pokedex\/([a-z0-9]+)\//gi)) {
+    counts[m[1]] = (counts[m[1]] || 0) + 1;
+  }
+  const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  if (!best) throw new Error("Could not detect the current format slug from /ai/pokedex");
+  return best[0];
+}
+
 function parseList(text) {
   const mons = [];
   for (const line of text.split("\n")) {
@@ -68,7 +92,6 @@ const STAT_MAP = {
   spe: "spe", speed: "spe",
 };
 
-/** Parse a Pokémon detail page: sectioned markdown with "Name: 99.5%" style entries. */
 function parseDetail(text) {
   const out = { moves: [], items: [], abilities: [], natures: [], stats: null, types: null, winrate: null };
   let section = null;
@@ -115,66 +138,159 @@ function parseDetail(text) {
   return out;
 }
 
+async function getJson(url) {
+  const res = await fetch(url, {
+    headers: { "user-agent": "MetaDrill/1.0 (personal study tool; nightly cached pull)" },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  return res.json();
+}
+
+const POKEAPI_STAT = {
+  hp: "hp", attack: "atk", defense: "def",
+  "special-attack": "spa", "special-defense": "spd", speed: "spe",
+};
+const prettyWords = (slugPart) =>
+  slugPart.split("-").map(w => (w.length <= 1 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1))).join(" ");
+function prettyMegaName(varietySlug) {
+  // charizard-mega-y -> "Mega Charizard Y"
+  const parts = varietySlug.split("-");
+  const mi = parts.indexOf("mega");
+  const base = prettyWords(parts.slice(0, mi).join("-"));
+  const suffix = parts.slice(mi + 1).map(s => s.toUpperCase()).join(" ");
+  return `Mega ${base}${suffix ? " " + suffix : ""}`;
+}
+
+/** Check every ranked Pokémon for Mega form varieties on PokéAPI and
+    attach their stats/types/ability. speciesCache persists across formats
+    within a run so shared mons cost one lookup. */
+async function attachMegas(mons, speciesCache) {
+  for (const mon of mons) {
+    const holdsStone = (mon.items || []).some(e => {
+      const n = typeof e === "string" ? e : e.name;
+      return /ite(?: [XY])?$/.test(n) && n !== "Eviolite";
+    });
+    const speciesSlug = mon.name.toLowerCase().replace(/[.'’%]/g, "").replace(/\s+/g, "-").split("-")[0];
+    try {
+      let varieties = speciesCache[speciesSlug];
+      if (varieties === undefined) {
+        await sleep(300);
+        const species = await getJson(`https://pokeapi.co/api/v2/pokemon-species/${speciesSlug}`);
+        varieties = (species.varieties || []).map(v => v.pokemon.name).filter(n => n.includes("-mega"));
+        speciesCache[speciesSlug] = varieties;
+      }
+      if (!varieties.length) {
+        if (holdsStone) {
+          console.warn(`  ! ${mon.name} holds a Mega Stone but PokéAPI has no Mega form (Champions-new Mega?) — skipped for now`);
+        }
+        continue;
+      }
+      const megas = [];
+      for (const v of varieties) {
+        await sleep(300);
+        const p = await getJson(`https://pokeapi.co/api/v2/pokemon/${v}`);
+        const stats = {};
+        p.stats.forEach(s => { const k = POKEAPI_STAT[s.stat.name]; if (k) stats[k] = s.base_stat; });
+        megas.push({
+          name: prettyMegaName(v),
+          slug: v,
+          types: p.types.map(x => x.type.name),
+          stats,
+          ability: p.abilities.length ? prettyWords(p.abilities[0].ability.name) : null,
+        });
+      }
+      mon.megas = megas;
+      console.log(`  + ${mon.name}: attached ${megas.map(g => g.name).join(", ")}`);
+    } catch (err) {
+      console.warn(`  ! Mega lookup failed for ${mon.name}: ${err.message}${mon.megas ? " (keeping previous Mega data)" : ""}`);
+    }
+  }
+}
+
 function loadPrevious() {
-  if (!existsSync(OUT)) return {};
+  if (!existsSync(OUT)) return { byId: {}, byName: {} };
   try {
     const prev = JSON.parse(readFileSync(OUT, "utf8"));
-    const byFormat = {};
+    const byId = {}, byName = {};
     for (const f of prev.formats || []) {
-      byFormat[f.id] = Object.fromEntries((f.mons || []).map((m) => [m.name, m]));
+      byId[f.id] = f;
+      for (const m of f.mons || []) if (!byName[m.name]) byName[m.name] = m;
     }
-    return byFormat;
+    return { byId, byName };
   } catch {
-    return {};
+    return { byId: {}, byName: {} };
   }
+}
+
+async function pullFormat(fmt, prev, speciesCache) {
+  const slug = fmt.slug === "auto" ? await resolveCurrentSlug() : fmt.slug;
+  console.log(`\n== ${fmt.game} · ${fmt.label} (slug: ${slug}) ==`);
+  const ranked = parseList(await get(`${BASE}/ai/pokedex/${slug}`)).slice(0, TOP_N);
+  if (ranked.length < 10) {
+    throw new Error(
+      `Only parsed ${ranked.length} ranked entries for "${slug}" — the format may have rotated. ` +
+      `Check ${BASE}/llms-full.txt for current slugs.`
+    );
+  }
+  console.log(`ranked: ${ranked.length} Pokémon (top: ${ranked[0].name} ${ranked[0].usage}%)`);
+
+  const prevMons = Object.fromEntries(((prev.byId[fmt.id] || {}).mons || []).map(m => [m.name, m]));
+  const mons = [];
+  for (const entry of ranked) {
+    await sleep(DELAY_MS);
+    let detail = { moves: [], items: [], abilities: [], natures: [], stats: null, types: null, winrate: null };
+    try {
+      detail = parseDetail(await get(`${BASE}/ai/pokedex/${slug}/${encodeURIComponent(entry.name)}`));
+    } catch (err) {
+      console.warn(`  ! detail failed for ${entry.name}: ${err.message}`);
+    }
+    const old = prevMons[entry.name] || prev.byName[entry.name] || {};
+    const mon = {
+      rank: entry.rank,
+      name: entry.name,
+      usage: entry.usage,
+      types: detail.types || old.types || [],
+      stats: detail.stats && Object.keys(detail.stats).length === 6 ? detail.stats : old.stats || null,
+      moves: detail.moves.length ? detail.moves : old.moves || [],
+      items: detail.items.length ? detail.items : old.items || [],
+      abilities: detail.abilities.length ? detail.abilities : old.abilities || [],
+      natures: detail.natures.length ? detail.natures : old.natures || [],
+    };
+    const wr = detail.winrate != null ? detail.winrate : old.winrate;
+    if (wr != null) mon.winrate = wr;
+    if (old.megas) mon.megas = old.megas;
+    mons.push(mon);
+    console.log(`  #${mon.rank} ${mon.name} — ${mon.moves.length} moves, ${mon.items.length} items, ${mon.natures.length} natures`);
+  }
+  console.log("Checking all ranked Pokémon for Mega forms on PokéAPI…");
+  await attachMegas(mons, speciesCache);
+  return { ...fmt, slug, mons };
 }
 
 async function main() {
   const prev = loadPrevious();
+  const speciesCache = {};
   const formats = [];
+  let successes = 0;
 
   for (const fmt of FORMATS) {
-    console.log(`\n== ${fmt.game} · ${fmt.label} (${fmt.slug}) ==`);
-    const listText = await get(`${BASE}/ai/pokedex/${fmt.slug}`);
-    const ranked = parseList(listText).slice(0, TOP_N);
-    if (ranked.length < 10) {
-      throw new Error(
-        `Only parsed ${ranked.length} ranked entries for slug "${fmt.slug}". ` +
-        `The format may have rotated or the page layout changed — check ${BASE}/llms.txt for current slugs.`
-      );
+    try {
+      formats.push(await pullFormat(fmt, prev, speciesCache));
+      successes++;
+    } catch (err) {
+      console.error(`\nFAILED ${fmt.label}: ${err.message}`);
+      if (prev.byId[fmt.id]) {
+        console.error(`  -> keeping previous ${fmt.label} data unchanged.`);
+        formats.push(prev.byId[fmt.id]);
+      } else {
+        console.error(`  -> no previous data for ${fmt.label}; it will be absent until a pull succeeds.`);
+      }
     }
-    console.log(`ranked list: ${ranked.length} Pokémon (leader: ${ranked[0].name} ${ranked[0].usage}%)`);
+  }
 
-    const mons = [];
-    for (const entry of ranked) {
-      await sleep(DELAY_MS);
-      let detail = { moves: [], items: [], abilities: [], natures: [], stats: null, types: null, winrate: null };
-      try {
-        detail = parseDetail(await get(`${BASE}/ai/pokedex/${fmt.slug}/${encodeURIComponent(entry.name)}`));
-      } catch (err) {
-        console.warn(`  ! detail fetch failed for ${entry.name}: ${err.message}`);
-      }
-      const old = (prev[fmt.id] || {})[entry.name] || {};
-      const mon = {
-        rank: entry.rank,
-        name: entry.name,
-        usage: entry.usage,
-        types: detail.types || old.types || [],
-        stats: detail.stats && Object.keys(detail.stats).length === 6 ? detail.stats : old.stats || null,
-        moves: detail.moves.length ? detail.moves : old.moves || [],
-        items: detail.items.length ? detail.items : old.items || [],
-        abilities: detail.abilities.length ? detail.abilities : old.abilities || [],
-      };
-      mon.natures = detail.natures.length ? detail.natures : old.natures || [];
-      const wr = detail.winrate != null ? detail.winrate : old.winrate;
-      if (wr != null) mon.winrate = wr;
-      if (!mon.moves.length && !mon.items.length && !mon.abilities.length) {
-        console.warn(`  ! no usable detail for ${entry.name} (kept in list anyway)`);
-      }
-      mons.push(mon);
-      console.log(`  #${mon.rank} ${mon.name} — ${mon.moves.length} moves, ${mon.items.length} items`);
-    }
-    formats.push({ ...fmt, mons });
+  if (successes === 0) {
+    console.error("\nNo format could be refreshed; data.json was NOT modified.");
+    process.exit(1);
   }
 
   const payload = {
@@ -183,11 +299,10 @@ async function main() {
     formats,
   };
   writeFileSync(OUT, JSON.stringify(payload, null, 1));
-  console.log(`\nWrote ${OUT}`);
+  console.log(`\nWrote ${OUT} (${successes}/${FORMATS.length} formats refreshed)`);
 }
 
 main().catch((err) => {
-  console.error(`\nFAILED: ${err.message}`);
-  console.error("data.json was NOT modified; the site keeps serving the last good snapshot.");
+  console.error(`\nFATAL: ${err.message}`);
   process.exit(1);
 });
