@@ -25,7 +25,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const OUT = fileURLToPath(new URL("../data.json", import.meta.url));
 const BASE = "https://www.pikalytics.com";
@@ -61,7 +61,8 @@ async function get(url) {
   return res.text();
 }
 
-/** The default-format index links to /ai/pokedex/<slug>/<mon>; extract <slug>. */
+/** The default-format index links to /ai/pokedex/<slug>/<mon>; extract <slug>.
+    Falls back to the "Format Code" line if link counting finds nothing. */
 async function resolveCurrentSlug() {
   const md = await get(`${BASE}/ai/pokedex`);
   const counts = {};
@@ -69,17 +70,48 @@ async function resolveCurrentSlug() {
     counts[m[1]] = (counts[m[1]] || 0) + 1;
   }
   const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-  if (!best) throw new Error("Could not detect the current format slug from /ai/pokedex");
-  return best[0];
+  if (best) return best[0];
+  const fc = md.match(/Format Code\*{0,2}[^a-z0-9]*`?([a-z0-9]+)`?/i);
+  if (fc) return fc[1];
+  throw new Error("Could not detect the current format slug from /ai/pokedex");
 }
 
+/* The ranked list is a markdown table under a "## Best N Pokemon by Usage"
+   heading:  | 1 | **Garchomp** | N/A% | 50.543% | 13846-13548-28 | [View] | [AI] |
+   Usage can be "N/A" (tournament-derived formats); win rate is column 4.
+   Other tables on the page (team cores, top teams) also have numeric rank
+   columns, so parsing is gated to the usage-table section. */
 function parseList(text) {
   const mons = [];
+  let inRankTable = false;
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    const heading = line.match(/^#{1,6}\s*(.+)/);
+    if (heading) {
+      inRankTable = /best\s+\d+\s+pokemon/i.test(heading[1]);
+      continue;
+    }
+    if (!inRankTable) continue;
+    const m = line.match(
+      /^\|\s*(\d+)\s*\|\s*\*{0,2}([^|*]+?)\*{0,2}\s*\|\s*(N\/A|\d+(?:\.\d+)?)\s*%?\s*\|\s*(N\/A|\d+(?:\.\d+)?)\s*%?\s*\|/
+    );
+    if (!m) continue;
+    const name = m[2].trim();
+    if (!name || name.includes(",")) continue;
+    mons.push({
+      rank: +m[1],
+      name,
+      usage: m[3] === "N/A" ? null : +m[3],
+      winrate: m[4] === "N/A" ? null : +m[4],
+    });
+  }
+  if (mons.length) return mons;
+  // Fallback: numbered-list style, in case another format renders that way
   for (const line of text.split("\n")) {
     const m = line.match(
       /^\s*(\d+)[.)]\s*\[?([A-Za-z0-9 .'’%\-]+?)\]?\s*(?:\([^)%]*\))?\s*[—:–-]?\s*\(?(\d+(?:\.\d+)?)\s*%\)?/
     );
-    if (m) mons.push({ rank: +m[1], name: m[2].trim(), usage: +m[3] });
+    if (m) mons.push({ rank: +m[1], name: m[2].trim(), usage: +m[3], winrate: null });
   }
   return mons;
 }
@@ -105,7 +137,7 @@ function parseDetail(text) {
         t.includes("item") ? "items" :
         t.includes("abilit") ? "abilities" :
         t.includes("nature") ? "natures" :
-        t.includes("type") ? "types" :
+        (t.includes("type") && !t.includes("tera")) ? "types" :
         (t.includes("stat") && !t.includes("usage")) ? "stats" : null;
       continue;
     }
@@ -131,8 +163,17 @@ function parseDetail(text) {
         if (key) { out.stats = out.stats || {}; out.stats[key] = +kv[2]; }
       }
     } else {
-      const m = line.match(/^[-*|]?\s*([A-Za-z0-9 .'’()\-]+?)\s*[:(–—-]\s*(\d+(?:\.\d+)?)\s*%/);
+      // e.g.  - **Dragon Claw**: 89.4%   (bold markers optional)
+      const m = line.match(/^[-*|]?\s*\*{0,2}([A-Za-z0-9 .'’()\-]+?)\*{0,2}\s*[:(–—-]\s*(\d+(?:\.\d+)?)\s*%/);
       if (m && out[section].length < 8) out[section].push({ name: m[1].trim(), pct: +m[2] });
+    }
+  }
+  // FAQ sometimes names the top nature: "features a **Jolly** nature ...
+  // accounts for 32.7% of competitive builds."
+  if (!out.natures.length) {
+    const nat = text.match(/features an? \*{0,2}([A-Za-z]+)\*{0,2} nature[\s\S]{0,160}?(\d+(?:\.\d+)?)\s*%/i);
+    if (nat && nat[1] && nat[1].toLowerCase() !== "nature") {
+      out.natures.push({ name: nat[1], pct: +nat[2] });
     }
   }
   return out;
@@ -161,9 +202,39 @@ function prettyMegaName(varietySlug) {
   return `Mega ${base}${suffix ? " " + suffix : ""}`;
 }
 
-/** Check every ranked Pokémon for Mega form varieties on PokéAPI and
-    attach their stats/types/ability. speciesCache persists across formats
-    within a run so shared mons cost one lookup. */
+const FORM_SLUG_OVERRIDES = {
+  "basculegion": "basculegion-male",
+  "maushold": "maushold-family-of-four",
+  "indeedee-f": "indeedee-female",
+  "indeedee-m": "indeedee-male",
+  "tornadus": "tornadus-incarnate",
+  "thundurus": "thundurus-incarnate",
+  "landorus": "landorus-incarnate",
+  "enamorus": "enamorus-incarnate",
+  "urshifu": "urshifu-single-strike",
+  "toxtricity": "toxtricity-amped",
+  "mimikyu": "mimikyu-disguised",
+};
+
+/** Fetch a Pokémon's PokéAPI record, trying the full form slug first,
+    then the species' default variety. */
+async function fetchPokemon(name, speciesSlug) {
+  const full = name.toLowerCase().replace(/[.'’%]/g, "").replace(/\s+/g, "-");
+  try {
+    await sleep(300);
+    return await getJson(`https://pokeapi.co/api/v2/pokemon/${FORM_SLUG_OVERRIDES[full] || full}`);
+  } catch {
+    const species = await getJson(`https://pokeapi.co/api/v2/pokemon-species/${speciesSlug}`);
+    const v = (species.varieties || []).find(x => x.is_default) || (species.varieties || [])[0];
+    if (!v) throw new Error("no varieties");
+    await sleep(300);
+    return await getJson(`https://pokeapi.co/api/v2/pokemon/${v.pokemon.name}`);
+  }
+}
+
+/** For every ranked Pokémon: backfill missing types/stats from PokéAPI
+    (the AI detail pages don't include a type section), and attach Mega
+    form varieties. speciesCache persists across formats within a run. */
 async function attachMegas(mons, speciesCache) {
   for (const mon of mons) {
     const holdsStone = (mon.items || []).some(e => {
@@ -171,6 +242,19 @@ async function attachMegas(mons, speciesCache) {
       return /ite(?: [XY])?$/.test(n) && n !== "Eviolite";
     });
     const speciesSlug = mon.name.toLowerCase().replace(/[.'’%]/g, "").replace(/\s+/g, "-").split("-")[0];
+    if (!(mon.types || []).length || !mon.stats) {
+      try {
+        const p = await fetchPokemon(mon.name, speciesSlug);
+        if (!(mon.types || []).length) mon.types = p.types.map(x => x.type.name);
+        if (!mon.stats) {
+          const stats = {};
+          p.stats.forEach(s => { const k = POKEAPI_STAT[s.stat.name]; if (k) stats[k] = s.base_stat; });
+          if (Object.keys(stats).length === 6) mon.stats = stats;
+        }
+      } catch (err) {
+        console.warn(`  ! type/stat backfill failed for ${mon.name}: ${err.message}`);
+      }
+    }
     try {
       let varieties = speciesCache[speciesSlug];
       if (varieties === undefined) {
@@ -256,7 +340,9 @@ async function pullFormat(fmt, prev, speciesCache) {
       abilities: detail.abilities.length ? detail.abilities : old.abilities || [],
       natures: detail.natures.length ? detail.natures : old.natures || [],
     };
-    const wr = detail.winrate != null ? detail.winrate : old.winrate;
+    const wr = detail.winrate != null ? detail.winrate
+      : entry.winrate != null ? entry.winrate
+      : old.winrate;
     if (wr != null) mon.winrate = wr;
     if (old.megas) mon.megas = old.megas;
     mons.push(mon);
@@ -302,7 +388,12 @@ async function main() {
   console.log(`\nWrote ${OUT} (${successes}/${FORMATS.length} formats refreshed)`);
 }
 
-main().catch((err) => {
-  console.error(`\nFATAL: ${err.message}`);
-  process.exit(1);
-});
+const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error(`\nFATAL: ${err.message}`);
+    process.exit(1);
+  });
+}
+
+export { parseList, parseDetail };
