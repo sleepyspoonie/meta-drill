@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Nightly Pikalytics snapshot for Meta Drill (Pokémon Champions).
+ * Nightly Pikalytics snapshot for VGC Meta Blitz (Pokémon Champions).
  *
  * Endpoints (documented at https://www.pikalytics.com/llms-full.txt):
  *   GET /ai/pokedex                    -> ranked list, site's current default format
@@ -55,7 +55,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function get(url) {
   const res = await fetch(url, {
-    headers: { "user-agent": "MetaDrill/1.0 (personal study tool; nightly cached pull)" },
+    headers: { "user-agent": "VGCMetaBlitz/1.0 (personal study tool; nightly cached pull)" },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.text();
@@ -180,7 +180,7 @@ function parseDetail(text) {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers: { "user-agent": "MetaDrill/1.0 (personal study tool; nightly cached pull)" },
+    headers: { "user-agent": "VGCMetaBlitz/1.0 (personal study tool; nightly cached pull)" },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.json();

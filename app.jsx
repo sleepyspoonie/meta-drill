@@ -2,7 +2,7 @@
 const { useEffect, useMemo, useRef, useState } = React;
 
 /* ============================================================
-   META DRILL — Pokémon Champions meta study tool
+   VGC META BLITZ — Pokémon Champions meta study tool
    · Spaced-repetition flashcards (Anki-style 4-tier grading)
    · Quiz games: moves >30%, items >10%, weaknesses, resists,
      ability multiple choice, offense/defense profiles
@@ -1078,6 +1078,7 @@ const FALLBACK = {
   }
  ]
 };
+const APP_VERSION = "v4 · 2026-07-10";
 
 const SRS = {
   GRADUATE_STEPS: 2,
@@ -1143,8 +1144,7 @@ const CATEGORIES = [
   { key: "builds", label: "Common Builds Quiz", hint: "pick the real nature + EV spread" },
   { key: "abilities", label: "Preferred Abilities Quiz", hint: "multiple choice" },
   { key: "natures", label: "Preferred Natures Quiz", hint: "flip cards" },
-  { key: "offense", label: "Physically or Specially Offensive Quiz", hint: "or mixed?" },
-  { key: "defense", label: "Physically or Specially Defensive Quiz", hint: "or balanced?" },
+  { key: "profile", label: "Physically or Specially Statted Quiz", hint: "offensive or defensive" },
   { key: "typematch", label: "Type Matchup Quiz", hint: "supereffective or resisted" },
   { key: "natureChart", label: "Nature Types Quiz", hint: "all 25 natures, +10%/−10%" },
 ];
@@ -1559,6 +1559,7 @@ function ConfigScreen({ formats, generated, live, onStart }) {
   const [cat, setCat] = useState("stats");
   const [statKey, setStatKey] = useState("spe");
   const [typeMatchKey, setTypeMatchKey] = useState("weak");
+  const [profileKey, setProfileKey] = useState("offense");
   const [abilSkipMono, setAbilSkipMono] = useState(true);
   const [count, setCount] = useState(20);
   const [megaMode, setMegaMode] = useState("include"); // include | exclude | only
@@ -1579,6 +1580,7 @@ function ConfigScreen({ formats, generated, live, onStart }) {
     if (key === "stats" || key === "speed" || key === "offense" || key === "defense")
       return pool.some(m => m.stats);
     if (key === "typematch") return true;
+    if (key === "profile") return pool.some(m => m.stats);
     if (key === "builds") return pool.some(m => m.builds && m.builds.length);
     if (key === "moves") return pool.some(m => (m.moves || []).map(norm).some(e => e.pct != null));
     if (key === "items") return pool.some(m => (m.items || []).map(norm).some(e => e.pct != null));
@@ -1586,7 +1588,7 @@ function ConfigScreen({ formats, generated, live, onStart }) {
   };
 
   const duelPool = pool.filter(m => m.stats);
-  const effCat = cat === "typematch" ? typeMatchKey : cat;
+  const effCat = cat === "typematch" ? typeMatchKey : cat === "profile" ? profileKey : cat;
   const deckPreview = cat !== "speed" && catAvailable(cat)
     ? buildDeck({ mons: availableMons, count: effCount, cat: effCat, statKey, doShuffle: false, abilSkipMono })
     : [];
@@ -1608,9 +1610,12 @@ function ConfigScreen({ formats, generated, live, onStart }) {
           color: "var(--gold)", textTransform: "uppercase", marginBottom: 6,
         }}>{gameLabel} · {reg.label}</div>
         <h1 style={{
-          fontFamily: "var(--display)", fontWeight: 800, fontSize: 46, lineHeight: 1,
+          fontFamily: "var(--display)", fontWeight: 800, fontSize: 42, lineHeight: 1,
           margin: 0, color: "#fff", letterSpacing: ".01em", textTransform: "uppercase",
-        }}>Meta Drill</h1>
+        }}>VGC Meta Blitz</h1>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "rgba(255,255,255,.35)", marginTop: 4 }}>
+          {APP_VERSION}
+        </div>
         <p style={{ color: "var(--muted)", fontSize: 14, margin: "10px 0 0", lineHeight: 1.5 }}>
           Study what the ladder is actually running — quizzes, games, and
           spaced-repetition flashcards built from live usage data.
@@ -1745,6 +1750,20 @@ function ConfigScreen({ formats, generated, live, onStart }) {
                         {s.label}
                       </SubPill>
                     ))}
+                  </div>
+                )}
+
+                {c.key === "profile" && on && (
+                  <div style={{ margin: "8px 0 4px 30px", display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    <SubPill small active={profileKey === "offense"} onClick={() => setProfileKey("offense")}>
+                      Offensive
+                    </SubPill>
+                    <SubPill small active={profileKey === "defense"} onClick={() => setProfileKey("defense")}>
+                      Defensive
+                    </SubPill>
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                      {profileKey === "offense" ? "physical, special, or mixed?" : "which side is bulkier?"}
+                    </span>
                   </div>
                 )}
 

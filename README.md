@@ -1,4 +1,4 @@
-# Meta Drill
+# VGC Meta Blitz
 
 Spaced-repetition flashcards and quiz games for learning the Pokémon
 Champions competitive meta, built on nightly Pikalytics usage data.
